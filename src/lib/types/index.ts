@@ -2,10 +2,12 @@ export type UserType = 'Cosh' | 'Rosch' | 'Maquin' | 'Flosh';
 
 export type WorkoutType = 'Push' | 'Pull' | 'Legs';
 
+export type WeightUnit = 'kg' | 'lb';
+
 export interface Exercise {
   id: string;
   name: string;
-  type: 'Push' | 'Pull' | 'Legs';
+  type: WorkoutType;
   emoji: string;
   alternative: {
     id: string;
@@ -13,7 +15,7 @@ export interface Exercise {
     emoji: string;
   };
   weight: number;
-  weightUnit: 'kg' | 'lb';
+  weightUnit: WeightUnit;
   barWeight?: number;
   sets: number;
   reps: number;
@@ -24,9 +26,9 @@ export interface WorkoutLog {
   id: string;
   date: string;
   time?: string;
-  type: 'Push' | 'Pull' | 'Legs';
+  type: WorkoutType;
   bodyWeight?: number;
-  bodyWeightUnit?: 'kg' | 'lb';
+  bodyWeightUnit?: WeightUnit;
   exercises: Exercise[];
   notes?: string;
   duration?: number;

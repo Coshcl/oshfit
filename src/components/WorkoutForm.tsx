@@ -1,18 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { Exercise, WorkoutLog } from '@/lib/types'
+import { Exercise, WorkoutLog, WorkoutType } from '@/lib/types'
 import { exercises as allExercises } from '@/lib/config/exercises'
 import { ExerciseInput } from './ExerciseInput'
 
 interface WorkoutFormProps {
-  workoutType: 'Push' | 'Pull' | 'Legs'
+  workoutType: WorkoutType
   userId: string
-  onSubmit?: (workoutData: WorkoutLog) => void
   onComplete?: () => void
 }
 
-export function WorkoutForm({ workoutType, userId, onSubmit, onComplete }: WorkoutFormProps) {
+export function WorkoutForm({ workoutType, userId, onComplete }: WorkoutFormProps) {
   const [bodyWeight, setBodyWeight] = useState<string>('')
   const [bodyWeightUnit, setBodyWeightUnit] = useState<'kg' | 'lb'>('kg')
   const [notes, setNotes] = useState<string>('')
@@ -51,10 +50,6 @@ export function WorkoutForm({ workoutType, userId, onSubmit, onComplete }: Worko
       exercises,
       notes: notes || undefined,
       duration
-    }
-    
-    if (onSubmit) {
-      onSubmit(workoutLog)
     }
     
     try {
@@ -124,7 +119,6 @@ export function WorkoutForm({ workoutType, userId, onSubmit, onComplete }: Worko
           <ExerciseInput
             key={exercise.id}
             exercise={exercise}
-            data={exercise}
             onChange={(updatedExercise) => {
               const updatedExercises = [...exercises]
               updatedExercises[index] = updatedExercise

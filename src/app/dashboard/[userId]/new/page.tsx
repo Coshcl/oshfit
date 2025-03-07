@@ -4,13 +4,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/contexts/UserContext'
 import { WorkoutForm } from '@/components/WorkoutForm'
+import { WorkoutType } from '@/lib/types'
 
 export default function NewWorkoutPage() {
   const router = useRouter()
   const { user } = useUser()
-  const [selectedType, setSelectedType] = useState<'Push' | 'Pull' | 'Legs' | null>(null)
+  const [selectedType, setSelectedType] = useState<WorkoutType | null>(null)
 
-  const handleTypeSelect = (type: 'Push' | 'Pull' | 'Legs') => {
+  const handleTypeSelect = (type: WorkoutType) => {
     setSelectedType(type)
   }
 

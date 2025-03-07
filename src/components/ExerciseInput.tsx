@@ -46,7 +46,7 @@ export function ExerciseInput({ exercise, onChange }: ExerciseInputProps) {
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center">
           <span className="text-2xl mr-2">
-            {showAlternative ? currentExercise.emoji : exercise.emoji}
+            {showAlternative ? exercise.alternative.emoji : exercise.emoji}
           </span>
           <span 
             className="font-medium text-blue-600 underline cursor-pointer"

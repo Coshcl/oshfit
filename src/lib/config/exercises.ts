@@ -1,7 +1,9 @@
-import { Exercise } from '../types';
+import { Exercise, WorkoutType } from '../types';
 
 // Definición base de ejercicios sin los valores específicos de cada entrenamiento
-export const exercises: Omit<Exercise, 'weight' | 'weightUnit' | 'barWeight' | 'sets' | 'reps' | 'effort'>[] = [
+type BaseExercise = Omit<Exercise, 'weight' | 'weightUnit' | 'barWeight' | 'sets' | 'reps' | 'effort'>;
+
+export const exercises: BaseExercise[] = [
   // PUSH
   {
     id: 'benchpress',
@@ -219,6 +221,6 @@ export const exercises: Omit<Exercise, 'weight' | 'weightUnit' | 'barWeight' | '
 ];
 
 // Función auxiliar para filtrar ejercicios por tipo
-export function getExercisesForType(type: 'Push' | 'Pull' | 'Legs') {
+export function getExercisesForType(type: WorkoutType): BaseExercise[] {
   return exercises.filter(exercise => exercise.type === type);
 } 
