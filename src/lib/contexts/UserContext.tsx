@@ -151,7 +151,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     // Intentar guardar en MongoDB en segundo plano
     await saveToMongoDB('workouts', 'PUT', { 
       workoutId: logId, 
-      workout: updatedLog 
+      workout: updatedLog,
+      userId: user.id // Añadir userId para facilitar la actualización en MongoDB
     })
   }
 
@@ -166,7 +167,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     })
 
     // Intentar eliminar en MongoDB en segundo plano
-    await saveToMongoDB('workouts', 'DELETE', null, 1)
+    const queryParams = new URLSearchParams({ 
+      workoutId: logId,
+      userId: user.id // Añadir userId para facilitar la eliminación en MongoDB
+    }).toString()
+    
+    try {
+      await fetch(`/api/workouts?${queryParams}`, { method: 'DELETE' })
+    } catch (error) {
+      console.error('Error eliminando entrenamiento:', error)
+    }
   }
 
   return (

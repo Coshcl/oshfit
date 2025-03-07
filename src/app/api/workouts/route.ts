@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import clientPromise from '@/lib/db/mongodb'
 import { UserType } from '@/lib/types'
+import { ObjectId } from 'mongodb'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -42,14 +43,19 @@ export async function POST(request: Request) {
     })
     
     // Luego actualizar el usuario para incluir el entrenamiento en sus logs
-    const userCollection = client.db('oshfit').collection('users')
-    await userCollection.updateOne(
-      { id: userId },
-      { 
-        $push: { logs: workout },
-        $set: { updatedAt: new Date() }
-      }
-    )
+    try {
+      const userCollection = client.db('oshfit').collection('users')
+      await userCollection.updateOne(
+        { id: userId },
+        { 
+          $push: { logs: workout },
+          $set: { updatedAt: new Date() }
+        }
+      )
+    } catch (userUpdateError) {
+      console.error('Error actualizando usuario con el nuevo entrenamiento:', userUpdateError)
+      // Continuar aunque falle la actualización del usuario
+    }
     
     return NextResponse.json({ 
       success: true,
@@ -87,19 +93,24 @@ export async function PUT(request: Request) {
     
     // También actualizar el entrenamiento en el array de logs del usuario
     if (workout.userId) {
-      const userCollection = client.db('oshfit').collection('users')
-      await userCollection.updateOne(
-        { id: workout.userId },
-        { 
-          $set: { 
-            "logs.$[elem]": workout,
-            updatedAt: new Date()
+      try {
+        const userCollection = client.db('oshfit').collection('users')
+        await userCollection.updateOne(
+          { id: workout.userId },
+          { 
+            $set: { 
+              "logs.$[elem]": workout,
+              updatedAt: new Date()
+            }
+          },
+          { 
+            arrayFilters: [{ "elem.id": workoutId }] 
           }
-        },
-        { 
-          arrayFilters: [{ "elem.id": workoutId }] 
-        }
-      )
+        )
+      } catch (userUpdateError) {
+        console.error('Error actualizando logs de usuario:', userUpdateError)
+        // Continuar aunque falle la actualización
+      }
     }
     
     return NextResponse.json({ 
@@ -130,14 +141,26 @@ export async function DELETE(request: Request) {
     
     // Si se proporciona el userId, también eliminar el entrenamiento de los logs del usuario
     if (userId) {
-      const userCollection = client.db('oshfit').collection('users')
-      await userCollection.updateOne(
-        { id: userId },
-        { 
-          $pull: { logs: { id: workoutId } },
-          $set: { updatedAt: new Date() }
-        }
-      )
+      try {
+        const userCollection = client.db('oshfit').collection('users')
+        
+        // Usar un operador de filtrado adecuado para eliminar el entrenamiento del array logs
+        await userCollection.updateOne(
+          { id: userId },
+          { 
+            // Corregido: Especificar que queremos eliminar elementos donde id=workoutId
+            $pull: { 
+              logs: { id: workoutId } as any // Usamos 'as any' para evitar errores de tipo
+            },
+            $set: { 
+              updatedAt: new Date() 
+            }
+          }
+        )
+      } catch (userUpdateError) {
+        console.error('Error eliminando log de usuario:', userUpdateError)
+        // Continuar aunque falle la actualización
+      }
     }
     
     return NextResponse.json({ 
