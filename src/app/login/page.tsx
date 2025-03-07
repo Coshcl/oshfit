@@ -3,7 +3,6 @@
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import Link from 'next/link'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -17,18 +16,20 @@ export default function LoginPage() {
   }
 
   const handleLogin = async (username: string) => {
+    if (!username) return
+
     setError('')
     setLoading(true)
     
     try {
       const result = await signIn('credentials', {
         username,
-        password: 'dummypassword', // No se usa pero se requiere
+        password: 'dummypassword', // No se usa realmente
         redirect: false
       })
 
       if (result?.error) {
-        setError('Error al iniciar sesión')
+        setError('Usuario no válido. Usa uno de los usuarios predefinidos.')
       } else {
         router.push(`/dashboard/${username.toLowerCase()}`)
       }
@@ -47,7 +48,7 @@ export default function LoginPage() {
             Oshfit
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Ingresa a tu cuenta
+            Ingresa tu nombre de usuario
           </p>
         </div>
         

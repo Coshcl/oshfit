@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "update-browserslist": "npx update-browserslist-db@latest"
+    "lint": "next lint"
   },
   "dependencies": {
     "date-fns": "^3.6.0",

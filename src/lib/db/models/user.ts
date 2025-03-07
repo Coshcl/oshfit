@@ -67,30 +67,4 @@ export async function createUser(userData: UserProfile): Promise<void> {
   } catch (error) {
     console.error("Error creating user:", error)
   }
-}
-
-export async function validateUserCredentials(username: string, password: string): Promise<boolean> {
-  try {
-    console.log(`Validando credenciales para: ${username}`);
-    
-    // Para usuarios predefinidos, aceptar cualquier contraseña
-    const predefinedUsers = ['cosh', 'rosch', 'maquin', 'flosh'];
-    if (predefinedUsers.includes(username.toLowerCase())) {
-      console.log(`Usuario predefinido encontrado: ${username}`);
-      return true;
-    }
-    
-    // Para usuarios personalizados, verificar contraseña
-    const user = await getUserByUsername(username);
-    if (!user) {
-      console.log(`Usuario no encontrado: ${username}`);
-      return false;
-    }
-    
-    console.log(`Usuario encontrado: ${user.name}, verificando contraseña`);
-    return user.password === password;
-  } catch (error) {
-    console.error("Error en validateUserCredentials:", error);
-    return false;
-  }
 } 
