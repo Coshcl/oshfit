@@ -1,3 +1,6 @@
+// Archivo vacío para evitar errores de importación
+export {}
+
 import { auth, db, storage } from "./firebase";
 import {
   signOut,

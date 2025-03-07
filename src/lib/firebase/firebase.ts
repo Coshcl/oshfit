@@ -1,3 +1,6 @@
+// Archivo vacío para evitar errores de importación
+export {}
+
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
