@@ -12,7 +12,7 @@ interface OshfitScoreProps {
 export function OshfitScore({ score, logs }: OshfitScoreProps) {
   const [showInfo, setShowInfo] = useState(false)
 
-  // Preparar datos para el gráfico 2
+  // Preparar datos para el gráfico
   const chartData = logs.map(log => ({
     date: new Date(log.date).toLocaleDateString('es', {
       day: 'numeric',
@@ -75,12 +75,12 @@ export function OshfitScore({ score, logs }: OshfitScoreProps) {
               </p>
               <ul className="list-disc pl-5 space-y-2">
                 <li>
-                  <strong>Esfuerzo Percibido (60%):</strong> Tu evaluación subjetiva
-                  del esfuerzo en cada ejercicio.
+                  <strong>Progresión de Peso (60%):</strong> El incremento en el peso
+                  levantado comparado con tu sesión anterior.
                 </li>
                 <li>
-                  <strong>Progresión de Peso (25%):</strong> El incremento en el peso
-                  levantado comparado con tu sesión anterior.
+                  <strong>Esfuerzo Percibido (25%):</strong> Tu evaluación subjetiva
+                  del esfuerzo en cada ejercicio.
                 </li>
                 <li>
                   <strong>Volumen Total (15%):</strong> La combinación de peso y
@@ -108,10 +108,12 @@ export function OshfitScore({ score, logs }: OshfitScoreProps) {
 
 function calculateDailyScore(log: WorkoutLog): number {
   const baseScore = log.exercises.reduce((acc, exercise) => {
-    const effortScore = (exercise.perceivedEffort / 10) * 60 // 60% del peso
-    const weightScore = (exercise.weight / 100) * 25 // 25% del peso
-    const volumeScore = ((exercise.weight * exercise.reps) / 1000) * 15 // 15% del peso
-    return acc + effortScore + weightScore + volumeScore
+    // Intercambiamos los porcentajes: ahora el peso levantado tiene más importancia (60%)
+    // y el esfuerzo percibido tiene menos (25%)
+    const weightScore = (exercise.weight / 100) * 60 // 60% del peso (antes 25%)
+    const effortScore = (exercise.perceivedEffort / 10) * 25 // 25% del peso (antes 60%)
+    const volumeScore = ((exercise.weight * exercise.reps) / 1000) * 15 // 15% del peso (sin cambios)
+    return acc + weightScore + effortScore + volumeScore
   }, 0) / log.exercises.length
 
   // Redondear a un decimal

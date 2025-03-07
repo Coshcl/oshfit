@@ -1,16 +1,18 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect } from 'react'
-import { UserProfile, WorkoutLog, UserType } from '../types'
+import { UserProfile, WorkoutLog, UserType, Achievement } from '../types'
 import { achievements } from '../config/achievements'
+import { checkAchievements } from '../utils/achievementUtils'
 
 interface UserContextType {
   user: UserProfile | null
   setUser: (user: UserProfile) => void
-  addWorkoutLog: (log: WorkoutLog) => Promise<void>
+  addWorkoutLog: (log: WorkoutLog) => Promise<Achievement[]>
   updateWorkoutLog: (logId: string, log: WorkoutLog) => Promise<void>
   deleteWorkoutLog: (logId: string) => Promise<void>
   isLoading: boolean
+  showAchievementNotification: (achievements: Achievement[]) => void
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
@@ -27,6 +29,17 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [syncError, setSyncError] = useState<Error | null>(null)
+  const [achievementNotification, setAchievementNotification] = useState<Achievement[]>([])
+
+  // Mostrar notificación de logros
+  const showAchievementNotification = (newAchievements: Achievement[]) => {
+    setAchievementNotification(newAchievements)
+    
+    // Ocultar notificación después de 5 segundos
+    setTimeout(() => {
+      setAchievementNotification([])
+    }, 5000)
+  }
 
   // Cargar usuario desde MongoDB o usar predefinido como fallback
   useEffect(() => {
@@ -55,7 +68,31 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             if (response.ok) {
               const userData: UserProfile = await response.json()
               console.log(`Usuario cargado desde MongoDB: ${username}`, userData)
-              setUser(userData)
+              
+              // Verificar si hay logros pendientes de desbloquear
+              const { updatedUser, newlyUnlocked } = checkAchievements(userData)
+              if (newlyUnlocked.length > 0) {
+                console.log('Logros desbloqueados al cargar:', newlyUnlocked)
+                
+                // Actualizar usuario en BD con logros nuevos
+                try {
+                  await fetch(`/api/users/update`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                      userId: updatedUser.id,
+                      achievements: updatedUser.achievements
+                    })
+                  })
+                } catch (error) {
+                  console.error('Error actualizando logros:', error)
+                }
+                
+                // Mostrar notificación
+                showAchievementNotification(newlyUnlocked)
+              }
+              
+              setUser(updatedUser)
             } else {
               // Si falla, inicializar con datos predefinidos
               console.log(`Inicializando con datos predefinidos para: ${username}`)
@@ -114,15 +151,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     return false
   }
 
-  const addWorkoutLog = async (log: WorkoutLog) => {
-    if (!user) return
+  const addWorkoutLog = async (log: WorkoutLog): Promise<Achievement[]> => {
+    if (!user) return []
 
     // Actualizar estado local inmediatamente para UI responsiva
     const updatedUser = {
       ...user,
       logs: [...user.logs, log]
     }
-    setUser(updatedUser)
+    
+    // Verificar logros desbloqueados
+    const { updatedUser: userWithAchievements, newlyUnlocked } = checkAchievements(updatedUser, log)
+    
+    // Actualizar estado con logros nuevos
+    setUser(userWithAchievements)
 
     // Intentar guardar en MongoDB en segundo plano
     const success = await saveToMongoDB('workouts', 'POST', { 
@@ -130,9 +172,30 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       workout: log 
     })
     
+    // Si hay logros nuevos, actualizar en BD
+    if (newlyUnlocked.length > 0) {
+      try {
+        await fetch(`/api/users/update`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            userId: user.id,
+            achievements: userWithAchievements.achievements
+          })
+        })
+        
+        // Mostrar notificación
+        showAchievementNotification(newlyUnlocked)
+      } catch (error) {
+        console.error('Error actualizando logros:', error)
+      }
+    }
+    
     if (!success) {
       console.warn('Guardado offline: Los datos se sincronizan localmente pero no en la base de datos')
     }
+    
+    return newlyUnlocked
   }
 
   const updateWorkoutLog = async (logId: string, updatedLog: WorkoutLog) => {
@@ -143,10 +206,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       log.id === logId ? updatedLog : log
     )
     
-    setUser({
+    const updatedUser = {
       ...user,
       logs: updatedLogs
-    })
+    }
+    
+    // Verificar logros
+    const { updatedUser: userWithAchievements, newlyUnlocked } = checkAchievements(updatedUser)
+    
+    // Actualizar estado con logros nuevos
+    setUser(userWithAchievements)
 
     // Intentar guardar en MongoDB en segundo plano
     await saveToMongoDB('workouts', 'PUT', { 
@@ -154,6 +223,25 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       workout: updatedLog,
       userId: user.id // Añadir userId para facilitar la actualización en MongoDB
     })
+    
+    // Si hay logros nuevos, actualizar en BD
+    if (newlyUnlocked.length > 0) {
+      try {
+        await fetch(`/api/users/update`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            userId: user.id,
+            achievements: userWithAchievements.achievements
+          })
+        })
+        
+        // Mostrar notificación
+        showAchievementNotification(newlyUnlocked)
+      } catch (error) {
+        console.error('Error actualizando logros:', error)
+      }
+    }
   }
 
   const deleteWorkoutLog = async (logId: string) => {
@@ -161,10 +249,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     // Actualizar estado local inmediatamente
     const updatedLogs = user.logs.filter(log => log.id !== logId)
-    setUser({
+    const updatedUser = {
       ...user,
       logs: updatedLogs
-    })
+    }
+    
+    setUser(updatedUser)
 
     // Intentar eliminar en MongoDB en segundo plano
     const queryParams = new URLSearchParams({ 
@@ -179,6 +269,30 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Componente para mostrar la notificación de logros
+  const AchievementNotification = () => {
+    if (achievementNotification.length === 0) return null
+    
+    return (
+      <div className="fixed top-4 right-4 z-50 max-w-sm">
+        {achievementNotification.map((achievement) => (
+          <div 
+            key={achievement.id}
+            className="bg-green-100 border-l-4 border-green-500 p-4 mb-2 rounded shadow-md animate-fade-in"
+          >
+            <div className="flex items-center">
+              <div className="text-3xl mr-3">{achievement.emoji}</div>
+              <div>
+                <h3 className="font-bold text-green-800">{achievement.name}</h3>
+                <p className="text-sm text-green-700">{achievement.description}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <UserContext.Provider value={{
       user,
@@ -186,9 +300,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       addWorkoutLog,
       updateWorkoutLog,
       deleteWorkoutLog,
-      isLoading
+      isLoading,
+      showAchievementNotification
     }}>
       {children}
+      <AchievementNotification />
     </UserContext.Provider>
   )
 }

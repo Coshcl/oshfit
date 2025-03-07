@@ -17,12 +17,24 @@ interface ExerciseInputProps {
 export function ExerciseInput({ exercise, data, onChange }: ExerciseInputProps) {
   const currentExercise = data.useAlternative ? exercise.alternative : exercise
 
+  // Función para abrir búsqueda en YouTube
+  const openYouTubeSearch = () => {
+    const query = encodeURIComponent(`como hacer ${currentExercise.name}`)
+    window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank')
+  }
+
   return (
     <div className="bg-white p-4 rounded-lg shadow">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <span className="text-2xl">{currentExercise.emoji}</span>
-          <span className="font-medium">{currentExercise.name}</span>
+          <button 
+            onClick={openYouTubeSearch}
+            className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+            title="Buscar en YouTube"
+          >
+            {currentExercise.name}
+          </button>
         </div>
         
         <button

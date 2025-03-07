@@ -17,6 +17,8 @@ export default function Home() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [initializing, setInitializing] = useState(true)
+  const [selectedUser, setSelectedUser] = useState<string | null>(null)
+  const [password, setPassword] = useState('')
 
   // Inicializar usuarios predefinidos al cargar la página
   useEffect(() => {
@@ -35,20 +37,28 @@ export default function Home() {
     initializeUsers()
   }, [])
 
-  const handleSelectUser = async (username: string) => {
+  const handleSelectUser = (username: string) => {
+    setSelectedUser(username)
+    setError('')
+  }
+
+  const handleLogin = async () => {
+    if (!selectedUser) return
+
     setError('')
     setLoading(true)
     
     try {
       const result = await signIn('credentials', {
-        username,
+        username: selectedUser,
+        password: password,
         redirect: false
       })
 
       if (result?.error) {
-        setError('Error al iniciar sesión. Inténtalo de nuevo.')
+        setError('Contraseña incorrecta. Inténtalo de nuevo.')
       } else {
-        router.push(`/dashboard/${username.toLowerCase()}`)
+        router.push(`/dashboard/${selectedUser.toLowerCase()}`)
       }
     } catch (err) {
       setError('Error de conexión')
@@ -82,21 +92,61 @@ export default function Home() {
           </div>
         )}
         
-        <div className="grid grid-cols-2 gap-4">
-          {users.map((user) => (
-            <button
-              key={user.id}
-              onClick={() => handleSelectUser(user.id)}
-              disabled={loading}
-              className={`${user.color} text-white py-8 px-4 rounded-lg shadow hover:shadow-lg 
-                         transition-shadow duration-200 flex flex-col items-center justify-center
-                         disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              <span className="text-3xl font-bold mb-2">{user.name.charAt(0).toUpperCase()}</span>
-              <span className="text-lg">{user.name}</span>
-            </button>
-          ))}
-        </div>
+        {!selectedUser ? (
+          <div className="grid grid-cols-2 gap-4">
+            {users.map((user) => (
+              <button
+                key={user.id}
+                onClick={() => handleSelectUser(user.id)}
+                disabled={loading}
+                className={`${user.color} text-white py-8 px-4 rounded-lg shadow hover:shadow-lg 
+                            transition-shadow duration-200 flex flex-col items-center justify-center
+                            disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <span className="text-3xl font-bold mb-2">{user.name.charAt(0).toUpperCase()}</span>
+                <span className="text-lg">{user.name}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="text-center mb-4">
+              <p className="text-xl font-semibold">Hola, {selectedUser}!</p>
+              <p className="text-sm text-gray-500">Ingresa tu contraseña para continuar</p>
+            </div>
+            
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Contraseña
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+                placeholder="Ingresa tu contraseña"
+              />
+            </div>
+            
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="flex-1 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleLogin}
+                disabled={loading || !password}
+                className="flex-1 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700
+                          disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Cargando...' : 'Ingresar'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

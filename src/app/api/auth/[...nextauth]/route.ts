@@ -11,12 +11,40 @@ const secret = process.env.NEXTAUTH_SECRET || 'ESTE-ES-UN-SECRETO-TEMPORAL-NO-US
 console.log('NEXTAUTH_SECRET está configurado:', !!process.env.NEXTAUTH_SECRET)
 console.log('NEXTAUTH_URL está configurado:', process.env.NEXTAUTH_URL)
 
-// Lista de usuarios predefinidos para simplificar
+// Lista de usuarios predefinidos para simplificar, ahora con contraseñas
 const predefinedUsers = {
-  cosh: { id: 'Cosh' as UserType, name: 'cosh', logs: [], achievements, oshfitScore: 0 },
-  rosch: { id: 'Rosch' as UserType, name: 'rosch', logs: [], achievements, oshfitScore: 0 },
-  maquin: { id: 'Maquin' as UserType, name: 'maquin', logs: [], achievements, oshfitScore: 0 },
-  flosh: { id: 'Flosh' as UserType, name: 'flosh', logs: [], achievements, oshfitScore: 0 }
+  cosh: { 
+    id: 'Cosh' as UserType, 
+    name: 'cosh', 
+    password: 'celular10',
+    logs: [], 
+    achievements, 
+    oshfitScore: 0 
+  },
+  rosch: { 
+    id: 'Rosch' as UserType, 
+    name: 'rosch', 
+    password: 'trucha',
+    logs: [], 
+    achievements, 
+    oshfitScore: 0 
+  },
+  maquin: { 
+    id: 'Maquin' as UserType, 
+    name: 'maquin', 
+    password: 'celular10',
+    logs: [], 
+    achievements, 
+    oshfitScore: 0 
+  },
+  flosh: { 
+    id: 'Flosh' as UserType, 
+    name: 'flosh', 
+    password: 'celular10',
+    logs: [], 
+    achievements, 
+    oshfitScore: 0 
+  }
 } as const;
 
 // Lista de nombres de usuario válidos para verificación de tipado
@@ -28,17 +56,28 @@ const handler = NextAuth({
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        username: { label: "Username", type: "text" }
+        username: { label: "Username", type: "text" },
+        password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.username) return null
+        if (!credentials?.username || !credentials?.password) {
+          console.log('Faltan credenciales')
+          return null
+        }
         
-        // Simplificamos drásticamente: solo verificar si es un usuario predefinido
+        // Obtener username y password
         const username = credentials.username.toLowerCase() as ValidUsername;
+        const password = credentials.password;
         
         // Si no es un usuario predefinido, rechazar
         if (!validUsernames.includes(username as any)) {
           console.log(`Usuario no predefinido rechazado: ${username}`)
+          return null
+        }
+        
+        // Verificar contraseña
+        if (password !== predefinedUsers[username].password) {
+          console.log(`Contraseña incorrecta para: ${username}`)
           return null
         }
         
@@ -53,10 +92,11 @@ const handler = NextAuth({
           // Si no existe en la BD pero es predefinido, crearlo
           if (!user) {
             console.log(`Creando usuario predefinido en MongoDB: ${username}`)
-            const userData = predefinedUsers[username]
+            // Creamos una copia sin la contraseña para no guardarla en la BD
+            const { password: _, ...userDataWithoutPassword } = predefinedUsers[username];
             
             // Insertar el documento
-            const result = await collection.insertOne(userData)
+            const result = await collection.insertOne(userDataWithoutPassword)
             
             // Buscar el documento recién insertado
             user = await collection.findOne({ _id: result.insertedId })
