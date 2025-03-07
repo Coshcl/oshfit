@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import clientPromise from '@/lib/db/mongodb'
-import { UserType } from '@/lib/types'
+import { UserType, ExerciseData, WorkoutLog } from '@/lib/types'
 import { ObjectId } from 'mongodb'
 
 export async function GET(request: Request) {
@@ -36,19 +36,21 @@ export async function POST(request: Request) {
     
     // Primero guardar el entrenamiento
     const workoutCollection = client.db('oshfit').collection('workouts')
-    const normalizedExercises = workout.exercises.map(exercise => ({
+    
+    // Normalizar los datos de ejercicios para garantizar compatibilidad
+    const normalizedExercises = workout.exercises.map((exercise: ExerciseData) => ({
       ...exercise,
       weightUnit: exercise.weightUnit || 'kg',
       sets: exercise.sets || 1,
       repsPerSet: exercise.repsPerSet || 0,
       // Mantener reps para compatibilidad
-      reps: exercise.reps || (exercise.sets * exercise.repsPerSet)
+      reps: exercise.reps || (exercise.sets && exercise.repsPerSet ? exercise.sets * exercise.repsPerSet : 0)
     }))
-
+    
     const workoutToSave = {
       ...workout,
-      exercises: normalizedExercises,
       userId,
+      exercises: normalizedExercises,
       createdAt: new Date()
     }
     
@@ -60,7 +62,7 @@ export async function POST(request: Request) {
       await userCollection.updateOne(
         { id: userId },
         { 
-          $push: { logs: workout },
+          $push: { logs: workoutToSave },
           $set: { updatedAt: new Date() }
         }
       )
@@ -93,14 +95,24 @@ export async function PUT(request: Request) {
     const client = await clientPromise
     const collection = client.db('oshfit').collection('workouts')
     
+    // Normalizar los datos de ejercicios
+    const normalizedExercises = workout.exercises.map((exercise: ExerciseData) => ({
+      ...exercise,
+      weightUnit: exercise.weightUnit || 'kg',
+      sets: exercise.sets || 1,
+      repsPerSet: exercise.repsPerSet || 0,
+      reps: exercise.reps || (exercise.sets && exercise.repsPerSet ? exercise.sets * exercise.repsPerSet : 0)
+    }))
+    
+    const workoutToUpdate = {
+      ...workout,
+      exercises: normalizedExercises,
+      updatedAt: new Date()
+    }
+    
     const result = await collection.updateOne(
       { id: workoutId },
-      { 
-        $set: {
-          ...workout,
-          updatedAt: new Date()
-        }
-      }
+      { $set: workoutToUpdate }
     )
     
     // También actualizar el entrenamiento en el array de logs del usuario
@@ -111,7 +123,7 @@ export async function PUT(request: Request) {
           { id: workout.userId },
           { 
             $set: { 
-              "logs.$[elem]": workout,
+              "logs.$[elem]": workoutToUpdate,
               updatedAt: new Date()
             }
           },
