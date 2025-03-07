@@ -5,20 +5,10 @@ import { useState } from 'react'
 
 interface ExerciseInputProps {
   exercise: Exercise
-  data: {
-    weight: string
-    reps: string
-    effort: string
-    notes: string
-    useAlternative: boolean
-    weightUnit: string
-    barWeight?: number
-    sets: number
-  }
   onChange: (updatedExercise: Exercise) => void
 }
 
-export function ExerciseInput({ exercise, data, onChange }: ExerciseInputProps) {
+export function ExerciseInput({ exercise, onChange }: ExerciseInputProps) {
   const [showAlternative, setShowAlternative] = useState(false)
   const [currentExercise, setCurrentExercise] = useState(exercise)
   

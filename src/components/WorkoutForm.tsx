@@ -124,6 +124,7 @@ export function WorkoutForm({ workoutType, userId, onSubmit, onComplete }: Worko
           <ExerciseInput
             key={exercise.id}
             exercise={exercise}
+            data={exercise}
             onChange={(updatedExercise) => {
               const updatedExercises = [...exercises]
               updatedExercises[index] = updatedExercise
