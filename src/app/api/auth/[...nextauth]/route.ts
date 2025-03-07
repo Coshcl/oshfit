@@ -47,8 +47,23 @@ const handler = NextAuth({
           if (!user) {
             console.log(`Creando usuario predefinido en MongoDB: ${username}`)
             const userData = predefinedUsers[username]
+            
+            // Insertar y luego buscar el documento con _id
             await collection.insertOne(userData)
-            user = userData
+            
+            // Buscar el documento recién insertado
+            user = await collection.findOne({ name: username })
+            
+            if (!user) {
+              // Si algo salió mal con la inserción, usar datos predefinidos como fallback
+              console.warn(`No se pudo recuperar el usuario insertado, usando predefinido: ${username}`)
+              // Crear un objeto que cumpla con el tipo esperado de MongoDB
+              return {
+                id: predefinedUsers[username].id,
+                name: username,
+                email: `${username}@example.com`
+              }
+            }
           }
           
           console.log(`Login exitoso para: ${username}`)

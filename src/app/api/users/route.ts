@@ -37,14 +37,21 @@ export async function GET(request: Request) {
       
       try {
         const userData = predefinedUsers[username as keyof typeof predefinedUsers]
-        await collection.insertOne({
+        const result = await collection.insertOne({
           ...userData,
           createdAt: new Date(),
           updatedAt: new Date()
         })
         
-        // Devolver los datos del usuario recién creado
-        return NextResponse.json(userData)
+        // Buscar el documento recién insertado
+        const newUser = await collection.findOne({ _id: result.insertedId })
+        
+        if (newUser) {
+          return NextResponse.json(newUser)
+        } else {
+          // Si falla la creación, devolver los datos predefinidos
+          return NextResponse.json(predefinedUsers[username as keyof typeof predefinedUsers])
+        }
       } catch (createError) {
         console.error(`Error creando usuario ${username}:`, createError)
         // Si falla la creación, devolver los datos predefinidos

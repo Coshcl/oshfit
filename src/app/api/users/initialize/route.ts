@@ -29,12 +29,12 @@ export async function GET() {
           
           if (!existingUser) {
             // Crear usuario si no existe
-            await collection.insertOne({
+            const result = await collection.insertOne({
               ...userData,
               createdAt: new Date(),
               updatedAt: new Date()
             })
-            return { username, created: true }
+            return { username, created: true, id: result.insertedId.toString() }
           }
           
           return { username, created: false, exists: true }
