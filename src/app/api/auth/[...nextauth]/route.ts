@@ -3,6 +3,13 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { UserType } from '@/lib/types'
 import { achievements } from '@/lib/config/achievements'
 import clientPromise from '@/lib/db/mongodb'
+import { WithId, Document } from 'mongodb'
+
+// Asegurar que haya un secreto siempre
+const secret = process.env.NEXTAUTH_SECRET || 'ESTE-ES-UN-SECRETO-TEMPORAL-NO-USAR-EN-PRODUCCION'
+
+console.log('NEXTAUTH_SECRET está configurado:', !!process.env.NEXTAUTH_SECRET)
+console.log('NEXTAUTH_URL está configurado:', process.env.NEXTAUTH_URL)
 
 // Lista de usuarios predefinidos para simplificar
 const predefinedUsers = {
@@ -41,28 +48,22 @@ const handler = NextAuth({
           const collection = client.db('oshfit').collection('users')
           
           // Buscar usuario en la BD
-          let user = await collection.findOne({ name: username })
+          let user: WithId<Document> | null = await collection.findOne({ name: username })
           
           // Si no existe en la BD pero es predefinido, crearlo
           if (!user) {
             console.log(`Creando usuario predefinido en MongoDB: ${username}`)
             const userData = predefinedUsers[username]
             
-            // Insertar y luego buscar el documento con _id
-            await collection.insertOne(userData)
+            // Insertar el documento
+            const result = await collection.insertOne(userData)
             
             // Buscar el documento recién insertado
-            user = await collection.findOne({ name: username })
+            user = await collection.findOne({ _id: result.insertedId })
             
             if (!user) {
               // Si algo salió mal con la inserción, usar datos predefinidos como fallback
               console.warn(`No se pudo recuperar el usuario insertado, usando predefinido: ${username}`)
-              // Crear un objeto que cumpla con el tipo esperado de MongoDB
-              return {
-                id: predefinedUsers[username].id,
-                name: username,
-                email: `${username}@example.com`
-              }
             }
           }
           
@@ -107,8 +108,8 @@ const handler = NextAuth({
       }
     }
   },
-  secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development',
+  secret: secret, // Usamos nuestra variable que siempre tendrá un valor
+  debug: true, // Activamos modo debug para ver más detalles del error
 })
 
 export { handler as GET, handler as POST } 
