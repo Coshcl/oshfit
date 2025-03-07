@@ -26,6 +26,7 @@ const handler = NextAuth({
         
         if (!user) return null
 
+        // Asegurarnos de que devolvemos un objeto con la estructura correcta
         return {
           id: user.id,
           name: user.name,
@@ -38,11 +39,20 @@ const handler = NextAuth({
     signIn: '/login',
   },
   callbacks: {
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub as string
+    async jwt({ token, user }) {
+      if (user) {
+        token.sub = user.id // sub es el ID estándar en JWT
       }
-      return session
+      return token
+    },
+    async session({ session, token }) {
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.sub
+        }
+      }
     }
   }
 })
