@@ -21,23 +21,33 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    await loginUser(formData.username, formData.password)
+  }
+
+  // Función para el login, reutilizada para el formulario y botones rápidos
+  const loginUser = async (username: string, password: string = 'password123') => {
     setError('')
     setLoading(true)
     
     try {
+      console.log(`Intentando iniciar sesión con: ${username}`)
+      
       const result = await signIn('credentials', {
-        username: formData.username,
-        password: formData.password,
+        username,
+        password,
         redirect: false
       })
 
       if (result?.error) {
+        console.error(`Error de inicio de sesión:`, result.error)
         setError('Usuario o contraseña incorrectos')
       } else {
-        router.push(`/dashboard/${formData.username.toLowerCase()}`)
+        console.log(`Inicio de sesión exitoso para: ${username}`)
+        // Redirigir al dashboard
+        router.push(`/dashboard/${username.toLowerCase()}`)
       }
     } catch (err) {
-      console.error(err)
+      console.error(`Error general:`, err)
       setError('Error de conexión. Inténtalo de nuevo.')
     } finally {
       setLoading(false)
@@ -46,25 +56,7 @@ export default function LoginPage() {
 
   // Para inicio rápido con usuarios predefinidos
   const quickLogin = async (username: string) => {
-    setLoading(true)
-    try {
-      const result = await signIn('credentials', {
-        username,
-        password: 'password123', // Contraseña por defecto para usuarios predefinidos
-        redirect: false
-      })
-
-      if (result?.error) {
-        setError('Error al iniciar sesión automática')
-      } else {
-        router.push(`/dashboard/${username.toLowerCase()}`)
-      }
-    } catch (err) {
-      console.error(err)
-      setError('Error de conexión. Inténtalo de nuevo.')
-    } finally {
-      setLoading(false)
-    }
+    await loginUser(username, 'password123') // Contraseña por defecto para usuarios predefinidos
   }
 
   return (

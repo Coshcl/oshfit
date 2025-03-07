@@ -6,8 +6,8 @@ import { AuthProvider } from '@/components/AuthProvider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Oshfit - Track Your Progress',
-  description: 'Track your PPL workouts and achieve your fitness goals',
+  title: 'Oshfit - Seguimiento de Entrenamientos',
+  description: 'Aplicación para seguimiento de rutinas de entrenamiento Push, Pull, Legs',
 }
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body className={`${inter.className} bg-gray-100 text-gray-900 min-h-screen`}>
         <AuthProvider>
           <main className="max-w-md mx-auto bg-white min-h-screen shadow-lg">
