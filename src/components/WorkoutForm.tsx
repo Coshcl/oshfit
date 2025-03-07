@@ -7,7 +7,7 @@ import { WorkoutLog } from '@/lib/types'
 import { v4 as uuid } from 'uuid'
 
 interface WorkoutFormProps {
-  workoutType: string
+  workoutType: 'Push' | 'Pull' | 'Legs'
   userId: string
   onComplete: (workoutLog: WorkoutLog) => void
 }

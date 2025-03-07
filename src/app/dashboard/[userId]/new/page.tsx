@@ -66,7 +66,7 @@ export default function NewWorkoutPage() {
           </div>
 
           <WorkoutForm
-            exercises={exercises[selectedType]}
+            workoutType={selectedType}
             onSubmit={handleWorkoutSubmit}
           />
         </div>
