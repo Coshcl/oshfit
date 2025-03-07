@@ -1,4 +1,4 @@
-export type UserType = 'Rosch' | 'Cosh' | 'Maquin' | 'Flosh' | 'Custom';
+export type UserType = 'Cosh' | 'Rosch' | 'Maquin' | 'Flosh';
 
 export type WorkoutType = 'Push' | 'Pull' | 'Legs';
 
@@ -23,7 +23,7 @@ export interface Exercise {
 export interface WorkoutLog {
   id: string;
   date: string;
-  time: string;
+  time?: string;
   type: 'Push' | 'Pull' | 'Legs';
   bodyWeight?: number;
   bodyWeightUnit?: 'kg' | 'lb';
@@ -37,14 +37,23 @@ export interface Achievement {
   name: string;
   description: string;
   emoji: string;
-  unlockedAt?: string;
-  isUnlocked: boolean;
+  unlocked: boolean;
+  progress: number;
+  requiredProgress: number;
+  criteria: {
+    type: string;
+    condition?: string;
+    value: any;
+  };
 }
 
 export interface UserProfile {
   id: UserType;
   name: string;
+  password?: string;
   logs: WorkoutLog[];
   achievements: Achievement[];
   oshfitScore: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 } 

@@ -1,24 +1,27 @@
 'use client'
 
 import { useState } from 'react'
-import { Exercise } from '@/lib/types'
-import { ExerciseInput } from './ExerciseInput'
-import { WorkoutLog } from '@/lib/types'
+import { Exercise, WorkoutLog } from '@/lib/types'
+import { exercises as allExercises } from '@/lib/config/exercises'
 import { v4 as uuid } from 'uuid'
 
 interface WorkoutFormProps {
   workoutType: 'Push' | 'Pull' | 'Legs'
   userId: string
-  onComplete: (workoutLog: WorkoutLog) => void
+  onSubmit?: (workoutData: WorkoutLog) => void
+  onComplete?: () => void
 }
 
-export function WorkoutForm({ workoutType, userId, onComplete }: WorkoutFormProps) {
+export function WorkoutForm({ workoutType, userId, onSubmit, onComplete }: WorkoutFormProps) {
   const [bodyWeight, setBodyWeight] = useState<string>('')
   const [bodyWeightUnit, setBodyWeightUnit] = useState<'kg' | 'lb'>('kg')
   const [notes, setNotes] = useState<string>('')
   const [duration, setDuration] = useState<number>(60)
+  
+  const exercisesForType = allExercises.filter(ex => ex.type === workoutType)
+  
   const [exercises, setExercises] = useState<Exercise[]>(
-    getExercisesForType(workoutType).map(ex => ({
+    exercisesForType.map(ex => ({
       ...ex,
       weight: 0,
       weightUnit: 'kg',
@@ -48,7 +51,28 @@ export function WorkoutForm({ workoutType, userId, onComplete }: WorkoutFormProp
       duration
     }
     
-    onComplete(workoutLog)
+    if (onSubmit) {
+      onSubmit(workoutLog)
+    }
+    
+    try {
+      await fetch('/api/workouts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          workout: workoutLog
+        }),
+      })
+      
+      if (onComplete) {
+        onComplete()
+      }
+    } catch (error) {
+      console.error('Error al guardar entrenamiento:', error)
+    }
   }
 
   return (

@@ -15,7 +15,7 @@ interface ExerciseInputProps {
     barWeight?: number
     sets: number
   }
-  onChange: (field: string, value: string | boolean) => void
+  onChange: (updatedExercise: Exercise) => void
 }
 
 export function ExerciseInput({ exercise, data, onChange }: ExerciseInputProps) {
@@ -23,7 +23,9 @@ export function ExerciseInput({ exercise, data, onChange }: ExerciseInputProps) 
   const [currentExercise, setCurrentExercise] = useState(exercise)
   
   // Manejador para abrir búsqueda en YouTube
-  const handleYouTubeSearch = () => {
+  const handleYouTubeSearch = (e: React.MouseEvent) => {
+    e.stopPropagation() // Evitar que se active el toggle de alternativa
+    
     const exerciseName = showAlternative 
       ? exercise.alternative.name 
       : exercise.name
@@ -33,10 +35,10 @@ export function ExerciseInput({ exercise, data, onChange }: ExerciseInputProps) 
     window.open(`https://www.youtube.com/results?search_query=${encodedQuery}`, '_blank')
   }
 
-  const handleChange = (field, value) => {
+  const handleChange = (field: string, value: any) => {
     const updatedExercise = { ...currentExercise, [field]: value }
     setCurrentExercise(updatedExercise)
-    onChange(field, value)
+    onChange(updatedExercise)
   }
 
   const handleToggleAlternative = () => {
@@ -46,16 +48,13 @@ export function ExerciseInput({ exercise, data, onChange }: ExerciseInputProps) 
       : { ...currentExercise, name: exercise.alternative.name, id: exercise.alternative.id, emoji: exercise.alternative.emoji }
     
     setCurrentExercise(newExercise)
-    onChange('useAlternative', true)
+    onChange(newExercise)
   }
 
   return (
     <div className="border rounded-lg p-4 bg-white shadow-sm">
       <div className="flex justify-between items-center mb-4">
-        <div 
-          className="flex items-center cursor-pointer" 
-          onClick={handleToggleAlternative}
-        >
+        <div className="flex items-center">
           <span className="text-2xl mr-2">
             {showAlternative ? currentExercise.emoji : exercise.emoji}
           </span>

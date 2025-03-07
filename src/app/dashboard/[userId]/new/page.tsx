@@ -3,74 +3,78 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/contexts/UserContext'
-import { WorkoutType } from '@/lib/types'
-import { exercises } from '@/lib/config/exercises'
 import { WorkoutForm } from '@/components/WorkoutForm'
 
 export default function NewWorkoutPage() {
   const router = useRouter()
-  const { user, addWorkoutLog } = useUser()
-  const [selectedType, setSelectedType] = useState<WorkoutType | null>(null)
+  const { user } = useUser()
+  const [selectedType, setSelectedType] = useState<'Push' | 'Pull' | 'Legs' | null>(null)
 
-  if (!user) return null
-
-  const handleWorkoutSubmit = (workoutData: any) => {
-    const newLog = {
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
-      type: selectedType!,
-      ...workoutData
-    }
-    
-    addWorkoutLog(newLog)
-    router.push(`/dashboard/${user.id.toLowerCase()}/logs`)
+  const handleTypeSelect = (type: 'Push' | 'Pull' | 'Legs') => {
+    setSelectedType(type)
   }
 
-  const workoutTypes: { type: WorkoutType; icon: string }[] = [
-    { type: 'Push', icon: '💪' },
-    { type: 'Pull', icon: '🏋️' },
-    { type: 'Legs', icon: '🦵' },
-  ]
+  const handleWorkoutComplete = () => {
+    // Redirigir al usuario a su dashboard después de completar el entrenamiento
+    if (user) {
+      router.push(`/dashboard/${user.name}`)
+    }
+  }
+
+  if (!user) {
+    return <div className="p-4 text-center">Cargando usuario...</div>
+  }
 
   return (
-    <div className="p-4 space-y-6">
-      <h1 className="text-xl font-bold">Nuevo Entrenamiento</h1>
-      
+    <div className="p-4 max-w-xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Nuevo Entrenamiento</h1>
+
       {!selectedType ? (
-        <div className="grid grid-cols-3 gap-4">
-          {workoutTypes.map(({ type, icon }) => (
-            <button
-              key={type}
-              onClick={() => setSelectedType(type)}
-              className="aspect-square bg-white rounded-lg shadow hover:shadow-md
-                       flex flex-col items-center justify-center space-y-2
-                       transition-shadow duration-200"
-            >
-              <span className="text-3xl">{icon}</span>
-              <span className="font-medium">{type}</span>
-            </button>
-          ))}
+        <div className="space-y-4">
+          <p className="text-lg mb-4">Selecciona el tipo de entrenamiento:</p>
+          
+          <button
+            onClick={() => handleTypeSelect('Push')}
+            className="w-full bg-blue-600 text-white p-4 rounded-lg mb-3"
+          >
+            Push (Empuje) 💪
+          </button>
+          
+          <button
+            onClick={() => handleTypeSelect('Pull')}
+            className="w-full bg-blue-600 text-white p-4 rounded-lg mb-3"
+          >
+            Pull (Tirón) 🏋️
+          </button>
+          
+          <button
+            onClick={() => handleTypeSelect('Legs')}
+            className="w-full bg-blue-600 text-white p-4 rounded-lg"
+          >
+            Legs (Piernas) 🦵
+          </button>
         </div>
       ) : (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">
-              Entrenamiento de {selectedType}
-            </h2>
+        <div>
+          <div className="flex items-center mb-6">
             <button
               onClick={() => setSelectedType(null)}
-              className="text-blue-600 hover:text-blue-800"
+              className="mr-3 text-blue-600"
             >
-              Cambiar
+              ← Volver
             </button>
+            <h2 className="text-xl font-semibold">
+              Entrenamiento de {selectedType}
+            </h2>
           </div>
-
+          
           <WorkoutForm
             workoutType={selectedType}
-            onSubmit={handleWorkoutSubmit}
+            userId={user.id}
+            onComplete={handleWorkoutComplete}
           />
         </div>
       )}
     </div>
-  )
+  );
 } 
