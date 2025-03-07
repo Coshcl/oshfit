@@ -1,17 +1,19 @@
 'use client'
 
-import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { signIn } from 'next-auth/react'
+import { achievements } from '@/lib/config/achievements'
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     username: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,46 +24,72 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
+    
+    // Validar formulario
+    if (formData.password !== formData.confirmPassword) {
+      setError('Las contraseñas no coinciden')
+      return
+    }
+    
+    if (formData.password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres')
+      return
+    }
+    
+    // Validar que el nombre de usuario no sea uno de los predefinidos
+    const reservedUsernames = ['cosh', 'rosch', 'maquin', 'flosh']
+    if (reservedUsernames.includes(formData.username.toLowerCase())) {
+      setError('Este nombre de usuario no está disponible')
+      return
+    }
+    
     setLoading(true)
     
     try {
+      // Crear nuevo usuario
+      const userId = formData.username.charAt(0).toUpperCase() + formData.username.slice(1).toLowerCase()
+      
+      const newUser = {
+        id: userId,
+        name: formData.username.toLowerCase(),
+        password: formData.password, // En producción esto debería estar hasheado
+        logs: [],
+        achievements: achievements,
+        oshfitScore: 0
+      }
+      
+      // Enviar a la API
+      const response = await fetch('/api/users/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newUser)
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al registrar usuario')
+      }
+      
+      // Iniciar sesión automáticamente
       const result = await signIn('credentials', {
         username: formData.username,
         password: formData.password,
         redirect: false
       })
-
+      
       if (result?.error) {
-        setError('Usuario o contraseña incorrectos')
-      } else {
-        router.push(`/dashboard/${formData.username.toLowerCase()}`)
+        throw new Error('Error al iniciar sesión tras registro')
       }
-    } catch (err) {
+      
+      // Redirigir al dashboard
+      router.push(`/dashboard/${formData.username.toLowerCase()}`)
+      
+    } catch (err: any) {
       console.error(err)
-      setError('Error de conexión. Inténtalo de nuevo.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Para inicio rápido con usuarios predefinidos
-  const quickLogin = async (username: string) => {
-    setLoading(true)
-    try {
-      const result = await signIn('credentials', {
-        username,
-        password: 'password123', // Contraseña por defecto para usuarios predefinidos
-        redirect: false
-      })
-
-      if (result?.error) {
-        setError('Error al iniciar sesión automática')
-      } else {
-        router.push(`/dashboard/${username.toLowerCase()}`)
-      }
-    } catch (err) {
-      console.error(err)
-      setError('Error de conexión. Inténtalo de nuevo.')
+      setError(err.message || 'Error al registrar. Inténtalo de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -72,10 +100,10 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8 bg-white p-6 rounded-lg shadow-lg">
         <div>
           <h2 className="text-center text-3xl font-bold text-gray-900">
-            Oshfit
+            Crear cuenta
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Ingresa con tus credenciales
+            Regístrate para comenzar a usar Oshfit
           </p>
         </div>
         
@@ -95,7 +123,7 @@ export default function LoginPage() {
                 className="mt-1 appearance-none rounded-lg relative block w-full px-3 py-2 border
                          border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none
                          focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Nombre de usuario"
+                placeholder="Elige un nombre de usuario"
               />
             </div>
             <div>
@@ -112,7 +140,24 @@ export default function LoginPage() {
                 className="mt-1 appearance-none rounded-lg relative block w-full px-3 py-2 border
                          border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none
                          focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Contraseña"
+                placeholder="Mínimo 6 caracteres"
+              />
+            </div>
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                Confirmar contraseña
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                required
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className="mt-1 appearance-none rounded-lg relative block w-full px-3 py-2 border
+                         border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none
+                         focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Repite tu contraseña"
               />
             </div>
           </div>
@@ -132,39 +177,19 @@ export default function LoginPage() {
                        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
                        disabled:bg-blue-400 disabled:cursor-not-allowed"
             >
-              {loading ? 'Cargando...' : 'Iniciar Sesión'}
+              {loading ? 'Creando cuenta...' : 'Registrarse'}
             </button>
           </div>
           
           <div className="text-center">
             <Link 
-              href="/register" 
+              href="/login" 
               className="text-blue-600 hover:text-blue-800 text-sm"
             >
-              ¿No tienes cuenta? Regístrate
+              ¿Ya tienes cuenta? Inicia sesión
             </Link>
           </div>
         </form>
-        
-        <div className="pt-4 border-t border-gray-200">
-          <p className="text-center text-sm text-gray-500 mb-3">
-            Usuarios predefinidos (inicio rápido):
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            {['cosh', 'rosch', 'maquin', 'flosh'].map((user) => (
-              <button
-                key={user}
-                onClick={() => quickLogin(user)}
-                disabled={loading}
-                className="py-2 px-3 text-sm bg-gray-100 hover:bg-gray-200 
-                         rounded-md border border-gray-300 text-gray-700
-                         disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-              >
-                {user}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   )

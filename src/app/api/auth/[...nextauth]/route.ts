@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { getUserById } from '@/lib/db/models/user'
+import { getUserById, getUserByUsername, createUser, validateUserCredentials } from '@/lib/db/models/user'
+import { achievements } from '@/lib/config/achievements'
 
 const handler = NextAuth({
   providers: [
@@ -11,22 +12,35 @@ const handler = NextAuth({
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.username) return null
+        if (!credentials?.username || !credentials?.password) return null
 
-        // Por ahora, solo permitimos los usuarios predefinidos
-        const allowedUsers = ['cosh', 'rosch', 'maquin', 'flosh']
         const username = credentials.username.toLowerCase()
         
-        if (!allowedUsers.includes(username)) {
-          return null
+        // Validar credenciales
+        const isValid = await validateUserCredentials(username, credentials.password)
+        if (!isValid) return null
+        
+        // Buscar por nombre de usuario (más fiable)
+        let user = await getUserByUsername(username)
+        
+        // Si no existe y es uno de los usuarios predefinidos, crearlo
+        if (!user && ['cosh', 'rosch', 'maquin', 'flosh'].includes(username)) {
+          const userId = username.charAt(0).toUpperCase() + username.slice(1)
+          const newUser = {
+            id: userId,
+            name: username,
+            logs: [],
+            achievements: achievements,
+            oshfitScore: 0,
+            password: 'password123' // Contraseña por defecto para usuarios predefinidos
+          }
+          
+          await createUser(newUser)
+          user = newUser
         }
-
-        // En el futuro, aquí verificaremos la contraseña contra la base de datos
-        const user = await getUserById(username.charAt(0).toUpperCase() + username.slice(1))
         
         if (!user) return null
 
-        // Asegurarnos de que devolvemos un objeto con la estructura correcta
         return {
           id: user.id,
           name: user.name,
@@ -41,7 +55,7 @@ const handler = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.sub = user.id // sub es el ID estándar en JWT
+        token.sub = user.id
       }
       return token
     },
