@@ -3,79 +3,87 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/contexts/UserContext'
-import { WorkoutForm } from '@/components/WorkoutForm'
 import { WorkoutType } from '@/lib/types'
+import { exercises } from '@/lib/config/exercises'
+import { WorkoutForm } from '@/components/WorkoutForm'
 
 export default function NewWorkoutPage() {
   const router = useRouter()
-  const { user } = useUser()
+  const { user, addWorkoutLog } = useUser()
   const [selectedType, setSelectedType] = useState<WorkoutType | null>(null)
 
-  const handleTypeSelect = (type: WorkoutType) => {
-    setSelectedType(type)
-  }
+  if (!user) return null
 
-  const handleWorkoutComplete = () => {
-    // Redirigir al usuario a su dashboard después de completar el entrenamiento
-    if (user) {
-      router.push(`/dashboard/${user.name}`)
+  const handleWorkoutSubmit = async (workoutData: any) => {
+    const newLog = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      type: selectedType!,
+      ...workoutData
     }
+    
+    const newAchievements = await addWorkoutLog(newLog)
+    
+    // Si hay nuevos logros, mostrar notificación
+    if (newAchievements.length > 0) {
+      console.log('¡Nuevos logros desbloqueados!', newAchievements)
+    }
+    
+    router.push(`/dashboard/${user.id.toLowerCase()}/logs`)
   }
 
-  if (!user) {
-    return <div className="p-4 text-center">Cargando usuario...</div>
-  }
+  const workoutTypes: { type: WorkoutType; icon: string; description: string }[] = [
+    { type: 'Push', icon: '💪', description: 'Pecho, hombros, tríceps' },
+    { type: 'Pull', icon: '🏋️', description: 'Espalda, bíceps, antebrazos' },
+    { type: 'Legs', icon: '🦵', description: 'Cuádriceps, isquios, glúteos' },
+  ]
 
   return (
-    <div className="p-4 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Nuevo Entrenamiento</h1>
-
+    <div className="p-4 space-y-6">
+      <h1 className="text-xl font-bold">Nuevo Entrenamiento</h1>
+      
       {!selectedType ? (
         <div className="space-y-4">
-          <p className="text-lg mb-4">Selecciona el tipo de entrenamiento:</p>
-          
-          <button
-            onClick={() => handleTypeSelect('Push')}
-            className="w-full bg-blue-600 text-white p-4 rounded-lg mb-3"
-          >
-            Push (Empuje) 💪
-          </button>
-          
-          <button
-            onClick={() => handleTypeSelect('Pull')}
-            className="w-full bg-blue-600 text-white p-4 rounded-lg mb-3"
-          >
-            Pull (Tirón) 🏋️
-          </button>
-          
-          <button
-            onClick={() => handleTypeSelect('Legs')}
-            className="w-full bg-blue-600 text-white p-4 rounded-lg"
-          >
-            Legs (Piernas) 🦵
-          </button>
+          <p className="text-gray-600">Selecciona el tipo de entrenamiento:</p>
+          <div className="grid grid-cols-1 gap-4">
+            {workoutTypes.map(({ type, icon, description }) => (
+              <button
+                key={type}
+                onClick={() => setSelectedType(type)}
+                className="bg-white rounded-lg shadow hover:shadow-md
+                         flex items-center p-4 space-x-4
+                         transition-shadow duration-200"
+              >
+                <span className="text-3xl">{icon}</span>
+                <div className="text-left">
+                  <span className="font-medium">{type}</span>
+                  <p className="text-sm text-gray-500">{description}</p>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       ) : (
-        <div>
-          <div className="flex items-center mb-6">
-            <button
-              onClick={() => setSelectedType(null)}
-              className="mr-3 text-blue-600"
-            >
-              ← Volver
-            </button>
-            <h2 className="text-xl font-semibold">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">
               Entrenamiento de {selectedType}
             </h2>
+            <button
+              onClick={() => setSelectedType(null)}
+              className="text-blue-600 hover:text-blue-800"
+            >
+              Cambiar
+            </button>
           </div>
-          
+
           <WorkoutForm
+            exercises={exercises[selectedType]}
+            onSubmit={handleWorkoutSubmit}
             workoutType={selectedType}
-            userId={user.id}
-            onComplete={handleWorkoutComplete}
           />
         </div>
       )}
     </div>
-  );
+  )
 } 

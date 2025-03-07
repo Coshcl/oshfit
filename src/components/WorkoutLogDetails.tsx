@@ -25,14 +25,23 @@ export function WorkoutLogDetails({ log, onClose }: WorkoutLogDetailsProps) {
     month: 'long',
     day: 'numeric'
   })
+  
+  const formattedTime = date.toLocaleTimeString('es', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-4 z-50">
       <div className="bg-white rounded-t-lg sm:rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
           <div>
             <h2 className="text-lg font-semibold">{formattedDate}</h2>
-            <p className="text-sm text-gray-500">Entrenamiento de {log.type}</p>
+            <p className="text-sm text-gray-500">
+              {formattedTime} • Entrenamiento de {log.type}
+              {log.duration && ` • ${log.duration} minutos`}
+              {log.cardioAfter && ' • Con cardio'}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -47,7 +56,9 @@ export function WorkoutLogDetails({ log, onClose }: WorkoutLogDetailsProps) {
           {log.bodyWeight && (
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Peso Corporal</span>
-              <span className="font-medium">{log.bodyWeight} kg</span>
+              <span className="font-medium">
+                {log.bodyWeight} {log.bodyWeightUnit || 'kg'}
+              </span>
             </div>
           )}
 
@@ -66,11 +77,14 @@ export function WorkoutLogDetails({ log, onClose }: WorkoutLogDetailsProps) {
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
                     <p className="text-gray-500">Peso</p>
-                    <p className="font-medium">{exercise.weight} kg</p>
+                    <p className="font-medium">
+                      {exercise.weight} {exercise.weightUnit}
+                      {exercise.barWeight && ` (+${exercise.barWeight} ${exercise.weightUnit} barra)`}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Reps</p>
-                    <p className="font-medium">{exercise.reps}</p>
+                    <p className="text-gray-500">Sets × Reps</p>
+                    <p className="font-medium">{exercise.sets} × {exercise.reps}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Esfuerzo</p>
@@ -86,6 +100,14 @@ export function WorkoutLogDetails({ log, onClose }: WorkoutLogDetailsProps) {
               </div>
             ))}
           </div>
+
+          {/* Notas */}
+          {log.notes && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="text-gray-600 font-medium mb-2">Notas</p>
+              <p className="text-sm">{log.notes}</p>
+            </div>
+          )}
 
           {/* Botón de eliminar */}
           <button

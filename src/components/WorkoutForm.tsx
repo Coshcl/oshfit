@@ -1,149 +1,249 @@
 'use client'
 
 import { useState } from 'react'
-import { Exercise, WorkoutLog, WorkoutType } from '@/lib/types'
-import { exercises as allExercises } from '@/lib/config/exercises'
+import { Exercise, WeightUnit, WorkoutType } from '@/lib/types'
 import { ExerciseInput } from './ExerciseInput'
+import { useUser } from '@/lib/contexts/UserContext'
 
 interface WorkoutFormProps {
+  exercises: Exercise[]
+  onSubmit: (data: {
+    bodyWeight?: number
+    bodyWeightUnit?: WeightUnit
+    exercises: {
+      exerciseName: string
+      emoji: string
+      weight: number
+      weightUnit: WeightUnit
+      barWeight?: number
+      sets: number
+      reps: number
+      perceivedEffort: number
+    }[]
+    notes?: string
+    duration?: number
+    cardioAfter?: boolean
+    type: WorkoutType
+  }) => void
   workoutType: WorkoutType
-  userId: string
-  onComplete?: () => void
 }
 
-export function WorkoutForm({ workoutType, userId, onComplete }: WorkoutFormProps) {
+export function WorkoutForm({ exercises, onSubmit, workoutType }: WorkoutFormProps) {
+  const { user } = useUser()
+  const preferredUnit = user?.preferredWeightUnit || 'kg'
+  
   const [bodyWeight, setBodyWeight] = useState<string>('')
-  const [bodyWeightUnit, setBodyWeightUnit] = useState<'kg' | 'lb'>('kg')
+  const [bodyWeightUnit, setBodyWeightUnit] = useState<WeightUnit>(preferredUnit)
   const [notes, setNotes] = useState<string>('')
-  const [duration, setDuration] = useState<number>(60)
-  
-  const exercisesForType = allExercises.filter(ex => ex.type === workoutType)
-  
-  const [exercises, setExercises] = useState<Exercise[]>(
-    exercisesForType.map(ex => ({
-      ...ex,
-      weight: 0,
-      weightUnit: 'kg',
-      barWeight: 0,
-      sets: 3,
-      reps: 10,
-      effort: 7
-    }))
-  )
-
-  const now = new Date()
-  const formattedDate = now.toLocaleDateString()
-  const formattedTime = now.toLocaleTimeString()
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    const uniqueId = `workout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    const workoutLog: WorkoutLog = {
-      id: uniqueId,
-      date: formattedDate,
-      time: formattedTime,
-      type: workoutType,
-      bodyWeight: bodyWeight ? parseFloat(bodyWeight) : undefined,
-      bodyWeightUnit,
-      exercises,
-      notes: notes || undefined,
-      duration
+  const [duration, setDuration] = useState<string>('')
+  const [cardioAfter, setCardioAfter] = useState<boolean>(false)
+  const [exerciseData, setExerciseData] = useState<{
+    [key: string]: {
+      weight: string
+      weightUnit: WeightUnit
+      barWeight: string
+      sets: string
+      reps: string
+      effort: string
+      useAlternative: boolean
     }
-    
-    try {
-      await fetch('/api/workouts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          workout: workoutLog
-        }),
-      })
-      
-      if (onComplete) {
-        onComplete()
+  }>({})
+
+  // Obtener la fecha y hora actual
+  const now = new Date()
+  const formattedDate = now.toLocaleDateString('es', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+  const formattedTime = now.toLocaleTimeString('es', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const formattedData = {
+      bodyWeight: bodyWeight ? parseFloat(bodyWeight) : undefined,
+      bodyWeightUnit: bodyWeight ? bodyWeightUnit : undefined,
+      exercises: exercises.map(exercise => {
+        const data = exerciseData[exercise.name] || {
+          weight: '0',
+          weightUnit: preferredUnit,
+          barWeight: '0',
+          sets: '0',
+          reps: '0',
+          effort: '0',
+          useAlternative: false
+        }
+
+        const exerciseInfo = data.useAlternative ? exercise.alternative : exercise
+        const barWeight = parseFloat(data.barWeight) || 0
+
+        return {
+          exerciseName: exerciseInfo.name,
+          emoji: exerciseInfo.emoji,
+          weight: parseFloat(data.weight) || 0,
+          weightUnit: data.weightUnit,
+          barWeight: barWeight > 0 ? barWeight : undefined,
+          sets: parseInt(data.sets) || 0,
+          reps: parseInt(data.reps) || 0,
+          perceivedEffort: parseInt(data.effort) || 0
+        }
+      }).filter(ex => ex.weight > 0 || ex.sets > 0 || ex.reps > 0),
+      notes: notes || undefined,
+      duration: duration ? parseInt(duration) : undefined,
+      cardioAfter,
+      type: workoutType
+    }
+
+    onSubmit(formattedData)
+  }
+
+  const updateExerciseData = (
+    exerciseName: string,
+    field: string,
+    value: string | boolean | WeightUnit
+  ) => {
+    setExerciseData(prev => ({
+      ...prev,
+      [exerciseName]: {
+        ...prev[exerciseName],
+        [field]: value
       }
-    } catch (error) {
-      console.error('Error al guardar entrenamiento:', error)
+    }))
+  }
+
+  const initializeExerciseData = (exerciseName: string) => {
+    if (!exerciseData[exerciseName]) {
+      setExerciseData(prev => ({
+        ...prev,
+        [exerciseName]: {
+          weight: '',
+          weightUnit: preferredUnit,
+          barWeight: '',
+          sets: '',
+          reps: '',
+          effort: '',
+          useAlternative: false
+        }
+      }))
     }
   }
 
+  // Inicializar datos para todos los ejercicios
+  exercises.forEach(exercise => {
+    initializeExerciseData(exercise.name)
+  })
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-blue-100 p-3 rounded-lg text-center text-blue-800">
-        <p className="font-semibold">{formattedDate} • {formattedTime}</p>
-        <p className="text-sm">Entrenamiento de {workoutType}</p>
+      {/* Fecha y hora actual */}
+      <div className="bg-blue-50 p-4 rounded-lg shadow text-center">
+        <p className="text-sm text-gray-500">Registrando entrenamiento</p>
+        <p className="font-medium">{formattedDate}</p>
+        <p className="text-sm text-gray-500">{formattedTime}</p>
       </div>
-      
-      <div className="flex items-center space-x-4">
-        <div className="w-1/2">
-          <label className="block text-sm font-medium mb-1">Peso corporal (opcional)</label>
-          <div className="flex">
-            <input
-              type="number"
-              value={bodyWeight}
-              onChange={(e) => setBodyWeight(e.target.value)}
-              className="w-full p-2 border rounded-l"
-              placeholder="Peso"
-              step="0.1"
-            />
-            <select 
-              value={bodyWeightUnit}
-              onChange={(e) => setBodyWeightUnit(e.target.value as 'kg' | 'lb')}
-              className="bg-gray-100 border rounded-r px-2"
-            >
-              <option value="kg">kg</option>
-              <option value="lb">lb</option>
-            </select>
-          </div>
-        </div>
-        
-        <div className="w-1/2">
-          <label className="block text-sm font-medium mb-1">Duración (min)</label>
+
+      {/* Peso corporal opcional */}
+      <div className="bg-white p-4 rounded-lg shadow">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Peso Corporal (opcional)
+        </label>
+        <div className="flex">
           <input
             type="number"
-            value={duration}
-            onChange={(e) => setDuration(parseInt(e.target.value))}
-            className="w-full p-2 border rounded"
-            min="1"
+            step="0.1"
+            value={bodyWeight}
+            onChange={(e) => setBodyWeight(e.target.value)}
+            placeholder="Peso"
+            className="w-full p-2 border rounded-l-md"
           />
+          <select
+            value={bodyWeightUnit}
+            onChange={(e) => setBodyWeightUnit(e.target.value as WeightUnit)}
+            className="bg-gray-100 border border-l-0 rounded-r-md px-2"
+          >
+            <option value="kg">kg</option>
+            <option value="lb">lb</option>
+          </select>
         </div>
       </div>
-      
-      <div className="space-y-6">
-        {exercises.map((exercise, index) => (
+
+      {/* Lista de ejercicios */}
+      <div className="space-y-4">
+        {exercises.map((exercise) => (
           <ExerciseInput
-            key={exercise.id}
+            key={exercise.name}
             exercise={exercise}
-            onChange={(updatedExercise) => {
-              const updatedExercises = [...exercises]
-              updatedExercises[index] = updatedExercise
-              setExercises(updatedExercises)
+            data={exerciseData[exercise.name] || {
+              weight: '',
+              weightUnit: preferredUnit,
+              barWeight: '',
+              sets: '',
+              reps: '',
+              effort: '',
+              useAlternative: false
             }}
+            onChange={(field, value) => 
+              updateExerciseData(exercise.name, field, value)
+            }
+            userPreferredUnit={preferredUnit}
           />
         ))}
       </div>
-      
-      <div>
-        <label className="block text-sm font-medium mb-1">Notas del entrenamiento</label>
+
+      {/* Notas generales */}
+      <div className="bg-white p-4 rounded-lg shadow">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Notas del entrenamiento (opcional)
+        </label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="w-full p-2 border rounded"
-          rows={3}
-          placeholder="Cómo te sentiste, observaciones, etc."
+          placeholder="Añade notas sobre tu entrenamiento..."
+          className="w-full p-2 border rounded-md h-24"
         />
       </div>
-      
+
+      {/* Duración y cardio */}
+      <div className="bg-white p-4 rounded-lg shadow">
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Duración del entrenamiento (minutos)
+          </label>
+          <input
+            type="number"
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            placeholder="Duración en minutos"
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
+
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="cardioAfter"
+            checked={cardioAfter}
+            onChange={(e) => setCardioAfter(e.target.checked)}
+            className="h-4 w-4 text-blue-600 rounded"
+          />
+          <label htmlFor="cardioAfter" className="ml-2 text-sm text-gray-700">
+            Hice cardio después del entrenamiento
+          </label>
+        </div>
+      </div>
+
+      {/* Botón de finalizar */}
       <button
         type="submit"
-        className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold"
+        className="w-full bg-blue-600 text-white py-3 rounded-lg
+                   hover:bg-blue-700 transition-colors duration-200"
       >
-        Finalizar entrenamiento
+        Finalizar Entrenamiento
       </button>
     </form>
   )

@@ -1,37 +1,40 @@
-export type UserType = 'Cosh' | 'Rosch' | 'Maquin' | 'Flosh';
+export type UserType = 'Rosch' | 'Cosh' | 'Maquin' | 'Flosh' | 'Custom';
 
 export type WorkoutType = 'Push' | 'Pull' | 'Legs';
 
 export type WeightUnit = 'kg' | 'lb';
 
 export interface Exercise {
-  id: string;
   name: string;
-  type: WorkoutType;
   emoji: string;
   alternative: {
-    id: string;
     name: string;
     emoji: string;
   };
+  muscleGroup: string;
+}
+
+export interface ExerciseLog {
+  exerciseName: string;
+  emoji: string;
   weight: number;
   weightUnit: WeightUnit;
-  barWeight?: number;
+  barWeight?: number; // Peso adicional de la barra
   sets: number;
   reps: number;
-  effort: number;
+  perceivedEffort: number;
 }
 
 export interface WorkoutLog {
   id: string;
-  date: string;
-  time?: string;
+  date: string; // ISO string
   type: WorkoutType;
   bodyWeight?: number;
   bodyWeightUnit?: WeightUnit;
-  exercises: Exercise[];
-  notes?: string;
-  duration?: number;
+  exercises: ExerciseLog[];
+  notes?: string; // Notas generales para todo el entrenamiento
+  duration?: number; // Duración en minutos
+  cardioAfter?: boolean; // Si se hizo cardio después
 }
 
 export interface Achievement {
@@ -39,23 +42,18 @@ export interface Achievement {
   name: string;
   description: string;
   emoji: string;
-  unlocked: boolean;
-  progress: number;
-  requiredProgress: number;
-  criteria: {
-    type: string;
-    condition?: string;
-    value: any;
-  };
+  unlockedAt?: string;
+  isUnlocked: boolean;
+  progress?: number; // Progreso de 0 a 1 (0% a 100%)
+  requiredCount?: number; // Para logros que requieren acumular algo
+  currentCount?: number; // Contador actual
 }
 
 export interface UserProfile {
   id: UserType;
   name: string;
-  password?: string;
   logs: WorkoutLog[];
   achievements: Achievement[];
   oshfitScore: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  preferredWeightUnit?: WeightUnit;
 } 

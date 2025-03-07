@@ -17,6 +17,11 @@ export function WorkoutLogCard({ log, onClick }: WorkoutLogCardProps) {
     month: 'long',
     day: 'numeric'
   })
+  
+  const formattedTime = date.toLocaleTimeString('es', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 
   // Encontrar el entrenamiento anterior del mismo tipo
   const previousLog = user?.logs
@@ -43,24 +48,31 @@ export function WorkoutLogCard({ log, onClick }: WorkoutLogCardProps) {
       }
     }
 
-    if (exercise.weight > previousExercise.weight) {
+    // Convertir pesos a la misma unidad (kg) para comparación
+    const currentWeightKg = exercise.weightUnit === 'lb' ? exercise.weight / 2.20462 : exercise.weight
+    const previousWeightKg = previousExercise.weightUnit === 'lb' ? previousExercise.weight / 2.20462 : previousExercise.weight
+
+    if (currentWeightKg > previousWeightKg) {
       return {
         emoji: exercise.emoji,
         progress: true // Verde
       }
-    } else if (exercise.weight < previousExercise.weight) {
+    } else if (currentWeightKg < previousWeightKg) {
       return {
         emoji: exercise.emoji,
         progress: false // Rojo
       }
     } else {
-      // Si el peso es igual, comparar repeticiones
-      if (exercise.reps > previousExercise.reps) {
+      // Si el peso es igual, comparar repeticiones totales (sets * reps)
+      const currentVolume = exercise.sets * exercise.reps
+      const previousVolume = previousExercise.sets * previousExercise.reps
+      
+      if (currentVolume > previousVolume) {
         return {
           emoji: exercise.emoji,
           progress: true
         }
-      } else if (exercise.reps < previousExercise.reps) {
+      } else if (currentVolume < previousVolume) {
         return {
           emoji: exercise.emoji,
           progress: false
@@ -83,20 +95,24 @@ export function WorkoutLogCard({ log, onClick }: WorkoutLogCardProps) {
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="font-medium">{formattedDate}</h3>
-          <p className="text-sm text-gray-500">Entrenamiento de {log.type}</p>
+          <p className="text-sm text-gray-500">
+            {formattedTime} • {log.type}
+            {log.duration && ` • ${log.duration} min`}
+            {log.cardioAfter && ' • 🏃'}
+          </p>
         </div>
         {log.bodyWeight && (
           <div className="text-sm text-gray-500">
-            {log.bodyWeight} kg
+            {log.bodyWeight} {log.bodyWeightUnit || 'kg'}
           </div>
         )}
       </div>
 
-      <div className="flex space-x-2">
+      <div className="flex space-x-2 overflow-x-auto pb-1">
         {exerciseProgress.map((exercise, index) => (
           <div
             key={index}
-            className={`w-1/5 aspect-square rounded-lg flex items-center justify-center
+            className={`min-w-[3rem] aspect-square rounded-lg flex items-center justify-center
               ${exercise.progress === true ? 'bg-green-100' : 
                 exercise.progress === false ? 'bg-red-100' : 
                 'bg-gray-50'}`}
