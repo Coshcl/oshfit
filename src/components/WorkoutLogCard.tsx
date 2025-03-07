@@ -1,110 +1,118 @@
 'use client'
 
-import { WorkoutLog } from '@/lib/types'
-import { useUser } from '@/lib/contexts/UserContext'
+import { WorkoutLog, ExerciseData } from '@/lib/types'
+import { useState } from 'react'
+import { WorkoutLogDetails } from './WorkoutLogDetails'
 
 interface WorkoutLogCardProps {
   log: WorkoutLog
-  onClick: () => void
+  previousLog?: WorkoutLog
+  onDelete?: (id: string) => void
 }
 
-export function WorkoutLogCard({ log, onClick }: WorkoutLogCardProps) {
-  const { user } = useUser()
-  const date = new Date(log.date)
-  const formattedDate = date.toLocaleDateString('es', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+export function WorkoutLogCard({ log, previousLog, onDelete }: WorkoutLogCardProps) {
+  const [showDetails, setShowDetails] = useState(false)
 
-  // Encontrar el entrenamiento anterior del mismo tipo
-  const previousLog = user?.logs
-    .filter(l => l.type === log.type && new Date(l.date) < new Date(log.date))
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+  // Función para determinar si hay progreso en cada ejercicio
+  const getExerciseProgress = (exercise: ExerciseData) => {
+    if (!previousLog) return null
 
-  // Calcular progreso para cada ejercicio
-  const exerciseProgress = log.exercises.map(exercise => {
-    if (!previousLog) {
-      return {
-        emoji: exercise.emoji,
-        progress: null // Primer entrenamiento, sin color
-      }
-    }
-
+    // Buscar el mismo ejercicio en el log anterior
     const previousExercise = previousLog.exercises.find(
-      e => e.exerciseName === exercise.exerciseName
+      ex => ex.exerciseName === exercise.exerciseName
     )
 
-    if (!previousExercise) {
-      return {
-        emoji: exercise.emoji,
-        progress: null // Primer ejercicio de este tipo, sin color
-      }
-    }
+    if (!previousExercise) return null
 
-    if (exercise.weight > previousExercise.weight) {
+    // Convertir pesos a la misma unidad (kg) para comparación
+    const currentWeight = exercise.weightUnit === 'lb' 
+      ? exercise.weight * 0.45359237 
+      : exercise.weight
+      
+    const previousWeight = previousExercise.weightUnit === 'lb'
+      ? previousExercise.weight * 0.45359237
+      : previousExercise.weight
+
+    // Calcular repeticiones totales (sets * repsPerSet)
+    const currentReps = (exercise.sets || 0) * (exercise.repsPerSet || 0)
+    const previousReps = (previousExercise.sets || 0) * (previousExercise.repsPerSet || 0)
+
+    if (currentWeight > previousWeight) {
       return {
         emoji: exercise.emoji,
-        progress: true // Verde
-      }
-    } else if (exercise.weight < previousExercise.weight) {
-      return {
-        emoji: exercise.emoji,
-        progress: false // Rojo
+        progress: true
       }
     } else {
       // Si el peso es igual, comparar repeticiones
-      if (exercise.reps > previousExercise.reps) {
+      if (currentReps > previousReps) {
         return {
           emoji: exercise.emoji,
           progress: true
         }
-      } else if (exercise.reps < previousExercise.reps) {
+      } else if (currentWeight < previousWeight || currentReps < previousReps) {
         return {
           emoji: exercise.emoji,
           progress: false
         }
-      } else {
-        return {
-          emoji: exercise.emoji,
-          progress: null // Sin cambios, sin color
-        }
       }
     }
-  })
+
+    // Si todo es igual
+    return {
+      emoji: exercise.emoji,
+      progress: null
+    }
+  }
+
+  // Obtener la lista de progresos para cada ejercicio
+  const exerciseProgress = log.exercises.map(getExerciseProgress).filter(Boolean)
 
   return (
-    <button
-      onClick={onClick}
-      className="w-full bg-white rounded-lg shadow hover:shadow-md
-                 transition-shadow duration-200 p-4 text-left"
-    >
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <h3 className="font-medium">{formattedDate}</h3>
-          <p className="text-sm text-gray-500">Entrenamiento de {log.type}</p>
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div 
+        className="p-4 cursor-pointer" 
+        onClick={() => setShowDetails(true)}
+      >
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="font-bold">
+            {new Date(log.date).toLocaleDateString('es', {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric'
+            })}
+          </h3>
+          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+            {log.type}
+          </span>
         </div>
+
         {log.bodyWeight && (
-          <div className="text-sm text-gray-500">
-            {log.bodyWeight} kg
-          </div>
+          <p className="text-sm text-gray-500 mb-2">
+            Peso: {log.bodyWeight} {log.bodyWeightUnit || 'kg'}
+          </p>
         )}
+
+        <div className="flex space-x-2 mt-3">
+          {exerciseProgress.map((progress, index) => (
+            <div 
+              key={index}
+              className={`w-8 h-8 flex items-center justify-center rounded-full
+                ${progress?.progress === true ? 'bg-green-100' : 
+                  progress?.progress === false ? 'bg-red-100' : 'bg-gray-100'}`}
+            >
+              <span>{progress?.emoji}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="flex space-x-2">
-        {exerciseProgress.map((exercise, index) => (
-          <div
-            key={index}
-            className={`w-1/5 aspect-square rounded-lg flex items-center justify-center
-              ${exercise.progress === true ? 'bg-green-100' : 
-                exercise.progress === false ? 'bg-red-100' : 
-                'bg-gray-50'}`}
-          >
-            <span className="text-xl">{exercise.emoji}</span>
-          </div>
-        ))}
-      </div>
-    </button>
+      {showDetails && (
+        <WorkoutLogDetails 
+          log={log}
+          onClose={() => setShowDetails(false)}
+          onDelete={onDelete}
+        />
+      )}
+    </div>
   )
 } 
