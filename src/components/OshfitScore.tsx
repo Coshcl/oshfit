@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { WorkoutLog } from '@/lib/types'
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
+import { normalizeWorkoutLog, normalizeExerciseData } from '@/lib/utils/dataUtils'
 
 interface OshfitScoreProps {
   score: number
@@ -107,34 +108,36 @@ export function OshfitScore({ score, logs }: OshfitScoreProps) {
 }
 
 function calculateDailyScore(log: WorkoutLog): number {
-  const baseScore = log.exercises.reduce((acc, exercise) => {
-    // Compatibilidad con formato antiguo y nuevo
-    const sets = exercise.sets || 1;
-    const repsPerSet = exercise.repsPerSet || exercise.reps || 0;
+  // Normalizar el log para asegurar compatibilidad
+  const normalizedLog = normalizeWorkoutLog(log)
+  
+  const baseScore = normalizedLog.exercises.reduce((acc, exercise) => {
+    // Usar ejercicio normalizado
+    const normalized = normalizeExerciseData(exercise)
     
     // Calcular peso total (incluyendo barra si corresponde)
-    let totalWeight = exercise.weight;
+    let totalWeight = normalized.weight
     
-    if (exercise.includeBarWeight && exercise.barWeight) {
-      totalWeight += exercise.barWeight;
+    if (normalized.includeBarWeight && normalized.barWeight) {
+      totalWeight += normalized.barWeight
     }
     
     // Convertir a kg si está en libras
-    if (exercise.weightUnit === 'lb') {
-      totalWeight = totalWeight * 0.45359237;
+    if (normalized.weightUnit === 'lb') {
+      totalWeight = totalWeight * 0.45359237
     }
     
-    // Calcular volumen (peso * sets * reps)
-    const volume = totalWeight * sets * repsPerSet;
+    // Calcular volumen
+    const volume = totalWeight * normalized.sets * normalized.repsPerSet
     
-    // Calcular los componentes del score
-    const weightScore = (totalWeight / 100) * 60; // 60% del peso
-    const effortScore = (exercise.perceivedEffort / 10) * 25; // 25% del esfuerzo
-    const volumeScore = (volume / 1000) * 15; // 15% del volumen
+    // Calcular componentes del score
+    const weightScore = (totalWeight / 100) * 60
+    const effortScore = (normalized.perceivedEffort / 10) * 25
+    const volumeScore = (volume / 1000) * 15
     
-    return acc + weightScore + effortScore + volumeScore;
-  }, 0) / log.exercises.length;
+    return acc + weightScore + effortScore + volumeScore
+  }, 0) / normalizedLog.exercises.length
 
   // Redondear a un decimal
-  return Math.round(baseScore * 10) / 10;
+  return Math.round(baseScore * 10) / 10
 } 

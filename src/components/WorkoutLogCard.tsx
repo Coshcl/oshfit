@@ -3,6 +3,7 @@
 import { WorkoutLog, ExerciseData } from '@/lib/types'
 import { useState } from 'react'
 import { WorkoutLogDetails } from './WorkoutLogDetails'
+import { normalizeExerciseData, normalizeWorkoutLog, convertToKg } from '@/lib/utils/dataUtils'
 
 interface WorkoutLogCardProps {
   log: WorkoutLog
@@ -12,53 +13,51 @@ interface WorkoutLogCardProps {
 
 export function WorkoutLogCard({ log, previousLog, onDelete }: WorkoutLogCardProps) {
   const [showDetails, setShowDetails] = useState(false)
+  
+  // Normalizar logs para garantizar compatibilidad
+  const normalizedLog = normalizeWorkoutLog(log)
+  const normalizedPreviousLog = previousLog ? normalizeWorkoutLog(previousLog) : undefined
 
   // Función para determinar si hay progreso en cada ejercicio
   const getExerciseProgress = (exercise: ExerciseData) => {
-    if (!previousLog) return null
+    if (!normalizedPreviousLog) return null
+    
+    // Normalizar el ejercicio actual
+    const normalizedExercise = normalizeExerciseData(exercise)
 
     // Buscar el mismo ejercicio en el log anterior
-    const previousExercise = previousLog.exercises.find(
-      ex => ex.exerciseName === exercise.exerciseName
+    const previousExercise = normalizedPreviousLog.exercises.find(
+      ex => ex.exerciseName === normalizedExercise.exerciseName
     )
 
     if (!previousExercise) return null
+    
+    // Normalizar el ejercicio anterior
+    const normalizedPreviousExercise = normalizeExerciseData(previousExercise)
 
-    // Compatibilidad: normalizar unidades de peso
-    const weightUnit = exercise.weightUnit || 'kg'
-    const prevWeightUnit = previousExercise.weightUnit || 'kg'
+    // Convertir pesos a kg para comparación
+    const currentWeight = convertToKg(normalizedExercise.weight, normalizedExercise.weightUnit)
+    const previousWeight = convertToKg(normalizedPreviousExercise.weight, normalizedPreviousExercise.weightUnit)
 
-    // Convertir pesos a la misma unidad (kg) para comparación
-    const currentWeight = weightUnit === 'lb' 
-      ? exercise.weight * 0.45359237 
-      : exercise.weight
-      
-    const previousWeight = prevWeightUnit === 'lb'
-      ? previousExercise.weight * 0.45359237
-      : previousExercise.weight
-
-    // Compatibilidad: calcular repeticiones tanto del viejo como del nuevo formato
-    const currentReps = exercise.reps || 
-      ((exercise.sets || 1) * (exercise.repsPerSet || 0))
-      
-    const previousReps = previousExercise.reps || 
-      ((previousExercise.sets || 1) * (previousExercise.repsPerSet || 0))
+    // Comparar repeticiones totales
+    const currentReps = normalizedExercise.sets * normalizedExercise.repsPerSet
+    const previousReps = normalizedPreviousExercise.sets * normalizedPreviousExercise.repsPerSet
 
     if (currentWeight > previousWeight) {
       return {
-        emoji: exercise.emoji,
+        emoji: normalizedExercise.emoji,
         progress: true
       }
     } else {
       // Si el peso es igual, comparar repeticiones
       if (currentReps > previousReps) {
         return {
-          emoji: exercise.emoji,
+          emoji: normalizedExercise.emoji,
           progress: true
         }
       } else if (currentWeight < previousWeight || currentReps < previousReps) {
         return {
-          emoji: exercise.emoji,
+          emoji: normalizedExercise.emoji,
           progress: false
         }
       }
@@ -66,13 +65,13 @@ export function WorkoutLogCard({ log, previousLog, onDelete }: WorkoutLogCardPro
 
     // Si todo es igual
     return {
-      emoji: exercise.emoji,
+      emoji: normalizedExercise.emoji,
       progress: null
     }
   }
 
   // Obtener la lista de progresos para cada ejercicio
-  const exerciseProgress = log.exercises.map(getExerciseProgress).filter(Boolean)
+  const exerciseProgress = normalizedLog.exercises.map(getExerciseProgress).filter(Boolean)
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">

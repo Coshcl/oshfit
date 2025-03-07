@@ -2,6 +2,7 @@
 
 import { WorkoutLog } from '@/lib/types'
 import { useUser } from '@/lib/contexts/UserContext'
+import { normalizeExerciseData, normalizeWorkoutLog } from '@/lib/utils/dataUtils'
 
 interface WorkoutLogDetailsProps {
   log: WorkoutLog
@@ -11,6 +12,9 @@ interface WorkoutLogDetailsProps {
 
 export function WorkoutLogDetails({ log, onClose, onDelete }: WorkoutLogDetailsProps) {
   const { deleteWorkoutLog } = useUser()
+
+  // Normalizar log para garantizar compatibilidad
+  const normalizedLog = normalizeWorkoutLog(log)
 
   const handleDelete = () => {
     if (onDelete) {
@@ -73,45 +77,39 @@ export function WorkoutLogDetails({ log, onClose, onDelete }: WorkoutLogDetailsP
           <div className="space-y-3">
             <h3 className="font-medium text-gray-700">Ejercicios:</h3>
             
-            {log.exercises.map((exercise, index) => {
-              // Compatibilidad: obtener reps ya sea del antiguo o del nuevo formato
-              const reps = exercise.reps || (exercise.sets && exercise.repsPerSet 
-                ? exercise.sets * exercise.repsPerSet 
-                : 0);
-              
-              // Para compatibilidad con formato antiguo
-              const sets = exercise.sets || 1;
-              const repsPerSet = exercise.repsPerSet || exercise.reps || 0;
+            {normalizedLog.exercises.map((exercise, index) => {
+              // Normalizar ejercicio
+              const normalized = normalizeExerciseData(exercise)
               
               // Calcular peso total con barra si corresponde
-              const totalWeight = (exercise.includeBarWeight && exercise.barWeight && exercise.barWeight > 0)
-                ? exercise.weight + exercise.barWeight
-                : exercise.weight;
+              const totalWeight = normalized.includeBarWeight && normalized.barWeight
+                ? normalized.weight + normalized.barWeight
+                : normalized.weight
                 
               return (
                 <div 
                   key={index} 
                   className="bg-gray-50 p-3 rounded-lg flex items-start"
                 >
-                  <div className="text-2xl mr-3">{exercise.emoji}</div>
+                  <div className="text-2xl mr-3">{normalized.emoji}</div>
                   <div>
-                    <p className="font-medium">{exercise.exerciseName}</p>
+                    <p className="font-medium">{normalized.exerciseName}</p>
                     <p className="text-sm text-gray-600">
-                      {totalWeight} {exercise.weightUnit || 'kg'} × {sets} sets × {repsPerSet} reps
+                      {totalWeight} {normalized.weightUnit} × {normalized.sets} sets × {normalized.repsPerSet} reps
                     </p>
-                    {exercise.includeBarWeight && exercise.barWeight && exercise.barWeight > 0 && (
+                    {normalized.includeBarWeight && normalized.barWeight > 0 && (
                       <p className="text-xs text-gray-500">
-                        (Incluye barra de {exercise.barWeight} {exercise.weightUnit || 'kg'})
+                        (Incluye barra de {normalized.barWeight} {normalized.weightUnit})
                       </p>
                     )}
                     <div className="mt-1 flex items-center">
                       <div className="text-xs text-gray-500 mr-2">Esfuerzo:</div>
                       <div className="bg-blue-100 px-2 py-0.5 rounded text-xs font-medium text-blue-800">
-                        {exercise.perceivedEffort}/10
+                        {normalized.perceivedEffort}/10
                       </div>
                     </div>
-                    {exercise.notes && (
-                      <p className="text-xs text-gray-500 mt-1">{exercise.notes}</p>
+                    {normalized.notes && (
+                      <p className="text-xs text-gray-500 mt-1">{normalized.notes}</p>
                     )}
                   </div>
                 </div>

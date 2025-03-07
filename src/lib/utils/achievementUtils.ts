@@ -1,5 +1,6 @@
 import { WorkoutLog, Achievement, UserProfile, WorkoutType, Exercise } from '@/lib/types'
 import { exercises } from '@/lib/config/exercises'
+import { normalizeWorkoutLog, normalizeExerciseData, calculateVolume } from './dataUtils'
 
 // Función principal para verificar logros desbloqueados
 export function checkAchievements(user: UserProfile, newLog?: WorkoutLog): { 
@@ -7,7 +8,16 @@ export function checkAchievements(user: UserProfile, newLog?: WorkoutLog): {
   newlyUnlocked: Achievement[] 
 } {
   const { achievements, logs } = user
-  const allLogs = newLog ? [...logs, newLog] : logs
+  // Normalizar logs para garantizar compatibilidad
+  const normalizedLogs = logs.map(log => normalizeWorkoutLog(log))
+  
+  // Normalizar el nuevo log si existe
+  let allNormalizedLogs = normalizedLogs
+  if (newLog) {
+    const normalizedNewLog = normalizeWorkoutLog(newLog)
+    allNormalizedLogs = [...normalizedLogs, normalizedNewLog]
+  }
+  
   const unlocked: Achievement[] = []
   
   // Actualizar estado de cada logro
@@ -18,7 +28,7 @@ export function checkAchievements(user: UserProfile, newLog?: WorkoutLog): {
     }
     
     // Verificar si el logro debe desbloquearse
-    const shouldUnlock = checkAchievementCondition(achievement.id, allLogs, user)
+    const shouldUnlock = checkAchievementCondition(achievement.id, allNormalizedLogs, user)
     
     if (shouldUnlock) {
       const unlockedAchievement = {
@@ -84,104 +94,106 @@ export function getAchievementProgress(achievementId: string, logs: WorkoutLog[]
 
 // Función para verificar condiciones específicas de cada logro
 function checkAchievementCondition(achievementId: string, logs: WorkoutLog[], user: UserProfile): boolean {
+  // Asegurarnos de que todos los logs están normalizados
+  const normalizedLogs = logs.map(log => normalizeWorkoutLog(log))
+  
   switch (achievementId) {
     case 'first_log':
-      return logs.length > 0
+      return normalizedLogs.length > 0
       
     case 'first_push':
-      return logs.some(log => log.type === 'Push')
+      return normalizedLogs.some(log => log.type === 'Push')
       
     case 'first_pull':
-      return logs.some(log => log.type === 'Pull')
+      return normalizedLogs.some(log => log.type === 'Pull')
       
     case 'first_legs':
-      return logs.some(log => log.type === 'Legs')
+      return normalizedLogs.some(log => log.type === 'Legs')
       
     case 'perfect_log':
-      return logs.some(log => log.exercises.every(ex => 
-        ex.perceivedEffort > 0 && ex.weight > 0 && ex.sets > 0 && ex.repsPerSet > 0))
+      return normalizedLogs.some(log => {
+        return log.exercises.every(ex => {
+          const normalized = normalizeExerciseData(ex)
+          return normalized.perceivedEffort > 0 && 
+                normalized.weight > 0 && 
+                normalized.sets > 0 && 
+                normalized.repsPerSet > 0
+        })
+      })
       
     case 'seven_days':
-      return hasConsecutiveDays(logs, 7)
+      return hasConsecutiveDays(normalizedLogs, 7)
       
     case 'weight_increase':
-      return hasWeightIncrease(logs, 5) // 5% de incremento
+      return hasWeightIncrease(normalizedLogs, 5) // 5% de incremento
       
     case 'max_effort':
-      return logs.some(log => log.exercises.some(ex => ex.perceivedEffort === 10))
+      return normalizedLogs.some(log => {
+        return log.exercises.some(ex => {
+          const normalized = normalizeExerciseData(ex)
+          return normalized.perceivedEffort === 10
+        })
+      })
       
     case 'score_improvement':
-      return hasScoreImprovement(logs)
+      return hasScoreImprovement(normalizedLogs)
       
     case 'consistency':
-      return hasConsecutiveDays(logs, 30)
+      return hasConsecutiveDays(normalizedLogs, 30)
       
     // Nuevos logros
     case 'early_bird':
-      return logs.some(log => {
+      return normalizedLogs.some(log => {
         if (!log.startTime) return false
         const time = new Date(log.startTime)
         return time.getHours() < 8
       })
       
     case 'night_owl':
-      return logs.some(log => {
+      return normalizedLogs.some(log => {
         if (!log.startTime) return false
         const time = new Date(log.startTime)
         return time.getHours() >= 21
       })
       
     case 'iron_marathon':
-      return logs.some(log => log.duration && log.duration > 90)
+      return normalizedLogs.some(log => log.duration && log.duration > 90)
       
     case 'extreme_efficiency':
-      return logs.some(log => {
+      return normalizedLogs.some(log => {
         if (!log.duration || log.duration >= 45) return false
-        const avgEffort = log.exercises.reduce((sum, ex) => sum + ex.perceivedEffort, 0) / log.exercises.length
+        const avgEffort = normalizedLogs.reduce((sum, ex) => sum + ex.perceivedEffort, 0) / normalizedLogs.length
         return avgEffort > 8
       })
       
     case 'triple_crown':
-      return hasTripleCrownInWeek(logs)
+      return hasTripleCrownInWeek(normalizedLogs)
       
     case 'consistency_artist':
-      return hasConsistentDayOfWeek(logs, 4)
+      return hasConsistentDayOfWeek(normalizedLogs, 4)
       
     case 'volume_master':
-      return logs.some(log => {
-        const totalVolume = log.exercises.reduce((sum, ex) => {
-          const totalWeight = ex.includeBarWeight && ex.barWeight 
-            ? ex.weight + ex.barWeight 
-            : ex.weight
-          return sum + (totalWeight * ex.sets * ex.repsPerSet)
-        }, 0)
+      return normalizedLogs.some(log => {
+        let totalVolume = 0
         
-        // Convertir libras a kg si es necesario
-        const totalVolumeKg = log.exercises.reduce((sum, ex) => {
-          if (ex.weightUnit === 'lb') {
-            const weightInKg = ex.weight * 0.45359237
-            const barWeightInKg = ex.includeBarWeight && ex.barWeight 
-              ? ex.barWeight * 0.45359237
-              : 0
-            return sum + ((weightInKg + barWeightInKg) * ex.sets * ex.repsPerSet)
-          }
-          return sum
-        }, totalVolume)
+        log.exercises.forEach(ex => {
+          totalVolume += calculateVolume(ex)
+        })
         
-        return totalVolumeKg >= 10000
+        return totalVolume >= 10000
       })
       
     case 'multifaceted':
-      return logs.some(log => {
+      return normalizedLogs.some(log => {
         const uniqueExercises = new Set(log.exercises.map(ex => ex.exerciseName))
         return uniqueExercises.size >= 8
       })
       
     case 'experimenter':
-      return hasUsedAllAlternatives(logs)
+      return hasUsedAllAlternatives(normalizedLogs)
       
     case 'personal_best':
-      return hasConsecutiveWeightIncrease(logs, 5)
+      return hasConsecutiveWeightIncrease(normalizedLogs, 5)
       
     default:
       return false
