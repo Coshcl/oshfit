@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Exercise, WorkoutLog } from '@/lib/types'
 import { exercises as allExercises } from '@/lib/config/exercises'
-import { v4 as uuid } from 'uuid'
 import { ExerciseInput } from './ExerciseInput'
 
 interface WorkoutFormProps {
@@ -40,8 +39,10 @@ export function WorkoutForm({ workoutType, userId, onSubmit, onComplete }: Worko
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    const uniqueId = `workout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     const workoutLog: WorkoutLog = {
-      id: uuid(),
+      id: uniqueId,
       date: formattedDate,
       time: formattedTime,
       type: workoutType,
