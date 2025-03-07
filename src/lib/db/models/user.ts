@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb'
 import clientPromise from '../mongodb'
 import { UserProfile } from '@/lib/types'
 
-export async function getUserById(userId: string): Promise<(UserProfile & { password?: string }) | null> {
+export async function getUserById(userId: string): Promise<UserProfile | null> {
   try {
     const client = await clientPromise
     const collection = client.db('oshfit').collection('users')
@@ -16,16 +16,15 @@ export async function getUserById(userId: string): Promise<(UserProfile & { pass
       name: user.name,
       logs: user.logs || [],
       achievements: user.achievements || [],
-      oshfitScore: user.oshfitScore || 0,
-      password: user.password
+      oshfitScore: user.oshfitScore || 0
     }
   } catch (error) {
-    console.error("Error en getUserById:", error);
-    return null;
+    console.error("Error getting user by ID:", error)
+    return null
   }
 }
 
-export async function getUserByUsername(username: string): Promise<(UserProfile & { password?: string }) | null> {
+export async function getUserByUsername(username: string): Promise<UserProfile | null> {
   try {
     const client = await clientPromise
     const collection = client.db('oshfit').collection('users')
@@ -39,37 +38,34 @@ export async function getUserByUsername(username: string): Promise<(UserProfile 
       name: user.name,
       logs: user.logs || [],
       achievements: user.achievements || [],
-      oshfitScore: user.oshfitScore || 0,
-      password: user.password
+      oshfitScore: user.oshfitScore || 0
     }
   } catch (error) {
-    console.error("Error en getUserByUsername:", error);
-    return null;
+    console.error("Error getting user:", error)
+    return null
   }
 }
 
-export async function updateUser(userId: string, data: Partial<UserProfile & { password?: string }>): Promise<void> {
+export async function updateUser(userId: string, data: Partial<UserProfile>): Promise<void> {
   try {
     const client = await clientPromise
     const collection = client.db('oshfit').collection('users')
     await collection.updateOne(
       { id: userId },
-      { $set: data },
-      { upsert: true }
+      { $set: data }
     )
   } catch (error) {
-    console.error("Error en updateUser:", error);
+    console.error("Error updating user:", error)
   }
 }
 
-export async function createUser(userData: UserProfile & { password?: string }): Promise<void> {
+export async function createUser(userData: UserProfile): Promise<void> {
   try {
     const client = await clientPromise
     const collection = client.db('oshfit').collection('users')
     await collection.insertOne(userData)
   } catch (error) {
-    console.error("Error en createUser:", error);
-    throw error;
+    console.error("Error creating user:", error)
   }
 }
 
