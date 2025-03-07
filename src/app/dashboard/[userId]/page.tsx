@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useUser } from '@/lib/contexts/UserContext'
 import { achievements } from '@/lib/config/achievements'
@@ -13,31 +14,68 @@ export default function DashboardPage({
 }: {
   params: { userId: string }
 }) {
-  const { user, setUser } = useUser()
-
+  const router = useRouter()
+  const { user, setUser, isLoading } = useUser()
+  
+  // Validar que el usuario sea válido
   useEffect(() => {
-    // Si no hay usuario, inicializar con datos predefinidos
-    if (!user) {
-      const username = params.userId.toLowerCase()
-      const userId = username.charAt(0).toUpperCase() + username.slice(1) as UserType
-      
-      setUser({
-        id: userId,
-        name: username,
-        logs: [],
-        achievements: achievements,
-        oshfitScore: 0
-      })
+    const validUsers = ['cosh', 'rosch', 'maquin', 'flosh']
+    if (!validUsers.includes(params.userId.toLowerCase())) {
+      console.error(`Usuario no válido: ${params.userId}`)
+      router.push('/') // Redirigir a la página principal
     }
-  }, [params.userId, user, setUser])
+  }, [params.userId, router])
 
-  if (!user) return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    </div>
-  )
+  // Inicializar usuario si es necesario
+  useEffect(() => {
+    if (!user && !isLoading) {
+      const username = params.userId.toLowerCase()
+      // Solo inicializar para usuarios válidos
+      if (['cosh', 'rosch', 'maquin', 'flosh'].includes(username)) {
+        const userId = username.charAt(0).toUpperCase() + username.slice(1) as UserType
+        setUser({
+          id: userId,
+          name: username,
+          logs: [],
+          achievements: achievements,
+          oshfitScore: 0
+        })
+      }
+    }
+  }, [params.userId, user, setUser, isLoading])
 
-  // Encontrar la fecha del primer log
+  // Mostrar carga
+  if (isLoading || !user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-500">Cargando perfil...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Verificar que es el usuario correcto
+  if (user.name.toLowerCase() !== params.userId.toLowerCase()) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="bg-red-100 text-red-600 p-4 rounded-lg mb-4">
+            Error: Usuario incorrecto
+          </div>
+          <button 
+            onClick={() => router.push('/')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Encontrar la fecha del primer log o usar hoy
   const startDate = user.logs.length > 0 
     ? new Date(Math.min(...user.logs.map(log => new Date(log.date).getTime())))
     : new Date()

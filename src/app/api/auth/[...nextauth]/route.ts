@@ -6,28 +6,31 @@ import clientPromise from '@/lib/db/mongodb'
 
 // Lista de usuarios predefinidos para simplificar
 const predefinedUsers = {
-  cosh: { id: 'Cosh', name: 'cosh', logs: [], achievements, oshfitScore: 0 },
-  rosch: { id: 'Rosch', name: 'rosch', logs: [], achievements, oshfitScore: 0 },
-  maquin: { id: 'Maquin', name: 'maquin', logs: [], achievements, oshfitScore: 0 },
-  flosh: { id: 'Flosh', name: 'flosh', logs: [], achievements, oshfitScore: 0 },
-}
+  cosh: { id: 'Cosh' as UserType, name: 'cosh', logs: [], achievements, oshfitScore: 0 },
+  rosch: { id: 'Rosch' as UserType, name: 'rosch', logs: [], achievements, oshfitScore: 0 },
+  maquin: { id: 'Maquin' as UserType, name: 'maquin', logs: [], achievements, oshfitScore: 0 },
+  flosh: { id: 'Flosh' as UserType, name: 'flosh', logs: [], achievements, oshfitScore: 0 }
+} as const;
+
+// Lista de nombres de usuario válidos para verificación de tipado
+const validUsernames = ['cosh', 'rosch', 'maquin', 'flosh'] as const;
+type ValidUsername = typeof validUsernames[number];
 
 const handler = NextAuth({
   providers: [
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        username: { label: "Username", type: "text" },
-        password: { label: "Password", type: "password" }
+        username: { label: "Username", type: "text" }
       },
       async authorize(credentials) {
         if (!credentials?.username) return null
         
         // Simplificamos drásticamente: solo verificar si es un usuario predefinido
-        const username = credentials.username.toLowerCase()
+        const username = credentials.username.toLowerCase() as ValidUsername;
         
         // Si no es un usuario predefinido, rechazar
-        if (!Object.keys(predefinedUsers).includes(username)) {
+        if (!validUsernames.includes(username as any)) {
           console.log(`Usuario no predefinido rechazado: ${username}`)
           return null
         }
@@ -50,7 +53,7 @@ const handler = NextAuth({
           
           console.log(`Login exitoso para: ${username}`)
           return {
-            id: username.charAt(0).toUpperCase() + username.slice(1),
+            id: predefinedUsers[username].id,
             name: username,
             email: `${username}@example.com`
           }
@@ -60,7 +63,7 @@ const handler = NextAuth({
           // Si hay error de BD, permitir login de todos modos para usuarios predefinidos
           console.log(`Continuando con login sin BD para usuario predefinido: ${username}`)
           return {
-            id: username.charAt(0).toUpperCase() + username.slice(1),
+            id: predefinedUsers[username].id,
             name: username,
             email: `${username}@example.com`
           }
@@ -69,8 +72,8 @@ const handler = NextAuth({
     })
   ],
   pages: {
-    signIn: '/login',
-    error: '/login', // Redirigir a login en caso de error
+    signIn: '/',
+    error: '/',
   },
   callbacks: {
     async jwt({ token, user }) {
