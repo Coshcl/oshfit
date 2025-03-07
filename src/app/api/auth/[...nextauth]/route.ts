@@ -2,6 +2,7 @@ import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { UserType } from '@/lib/types'
 import { achievements } from '@/lib/config/achievements'
+import clientPromise from '@/lib/db/mongodb'
 
 // Lista de usuarios predefinidos para simplificar
 const predefinedUsers = {
@@ -25,18 +26,45 @@ const handler = NextAuth({
         // Simplificamos drásticamente: solo verificar si es un usuario predefinido
         const username = credentials.username.toLowerCase()
         
-        // Si es un usuario predefinido, permitir acceso
-        if (Object.keys(predefinedUsers).includes(username)) {
-          console.log(`Login exitoso para usuario predefinido: ${username}`)
+        // Si no es un usuario predefinido, rechazar
+        if (!Object.keys(predefinedUsers).includes(username)) {
+          console.log(`Usuario no predefinido rechazado: ${username}`)
+          return null
+        }
+        
+        try {
+          // Conectar a MongoDB
+          const client = await clientPromise
+          const collection = client.db('oshfit').collection('users')
+          
+          // Buscar usuario en la BD
+          let user = await collection.findOne({ name: username })
+          
+          // Si no existe en la BD pero es predefinido, crearlo
+          if (!user) {
+            console.log(`Creando usuario predefinido en MongoDB: ${username}`)
+            const userData = predefinedUsers[username]
+            await collection.insertOne(userData)
+            user = userData
+          }
+          
+          console.log(`Login exitoso para: ${username}`)
+          return {
+            id: username.charAt(0).toUpperCase() + username.slice(1),
+            name: username,
+            email: `${username}@example.com`
+          }
+        } catch (error) {
+          console.error(`Error en BD durante login para ${username}:`, error)
+          
+          // Si hay error de BD, permitir login de todos modos para usuarios predefinidos
+          console.log(`Continuando con login sin BD para usuario predefinido: ${username}`)
           return {
             id: username.charAt(0).toUpperCase() + username.slice(1),
             name: username,
             email: `${username}@example.com`
           }
         }
-        
-        console.log(`Usuario no encontrado: ${username}`)
-        return null
       }
     })
   ],

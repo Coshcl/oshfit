@@ -14,7 +14,7 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
-// Lista de usuarios predefinidos para tener datos iniciales
+// Lista de usuarios predefinidos para fallback si la BD falla
 const predefinedUsers: Record<string, UserProfile> = {
   cosh: { id: 'Cosh', name: 'cosh', logs: [], achievements, oshfitScore: 0 },
   rosch: { id: 'Rosch', name: 'rosch', logs: [], achievements, oshfitScore: 0 },
@@ -24,16 +24,59 @@ const predefinedUsers: Record<string, UserProfile> = {
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Cargar usuario desde MongoDB o usar predefinido como fallback
+  useEffect(() => {
+    const loadUser = async () => {
+      if (!user && typeof window !== 'undefined') {
+        const path = window.location.pathname
+        const match = path.match(/\/dashboard\/([^\/]+)/)
+        
+        if (match) {
+          const username = match[1].toLowerCase()
+          setIsLoading(true)
+          
+          try {
+            // Intentar cargar desde MongoDB
+            const response = await fetch(`/api/users?username=${username}`)
+            
+            if (response.ok) {
+              const userData = await response.json()
+              console.log(`Usuario cargado desde MongoDB: ${username}`, userData)
+              setUser(userData)
+            } else {
+              // Si falla, usar predefinido
+              console.log(`Usando usuario predefinido como fallback: ${username}`)
+              if (predefinedUsers[username]) {
+                setUser(predefinedUsers[username])
+              }
+            }
+          } catch (error) {
+            console.error(`Error cargando usuario: ${username}`, error)
+            // Fallback a predefinido
+            if (predefinedUsers[username]) {
+              setUser(predefinedUsers[username])
+            }
+          } finally {
+            setIsLoading(false)
+          }
+        }
+      }
+    }
+
+    loadUser()
+  }, [user])
 
   // Función para guardar en MongoDB (cuando sea posible)
   const saveToMongoDB = async (endpoint: string, method: string, data: any) => {
     try {
-      await fetch(`/api/${endpoint}`, {
+      const response = await fetch(`/api/${endpoint}`, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       })
-      return true
+      return response.ok
     } catch (error) {
       console.error(`Error en operación de MongoDB (${endpoint}):`, error)
       return false // Continuar con datos en memoria si falla MongoDB
@@ -88,21 +131,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       logs: updatedLogs
     })
   }
-
-  // Inicializar usuario desde predefinidos si está en la URL
-  useEffect(() => {
-    if (!user && typeof window !== 'undefined') {
-      const path = window.location.pathname
-      const match = path.match(/\/dashboard\/([^\/]+)/)
-      if (match) {
-        const username = match[1].toLowerCase()
-        if (predefinedUsers[username]) {
-          console.log(`Inicializando usuario predefinido: ${username}`)
-          setUser(predefinedUsers[username])
-        }
-      }
-    }
-  }, [user])
 
   return (
     <UserContext.Provider value={{

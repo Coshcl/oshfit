@@ -2,13 +2,31 @@
 
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function LoginPage() {
   const router = useRouter()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [username, setUsername] = useState('')
+  const [initializing, setInitializing] = useState(true)
+
+  // Inicializar usuarios predefinidos al cargar la página
+  useEffect(() => {
+    const initializeUsers = async () => {
+      try {
+        const response = await fetch('/api/users/initialize')
+        const data = await response.json()
+        console.log('Usuarios inicializados:', data)
+      } catch (error) {
+        console.error('Error inicializando usuarios:', error)
+      } finally {
+        setInitializing(false)
+      }
+    }
+
+    initializeUsers()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -38,6 +56,19 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (initializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-blue-600 p-4">
+        <div className="bg-white p-8 rounded-lg shadow-lg">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+            <p className="text-gray-600">Inicializando usuarios...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
