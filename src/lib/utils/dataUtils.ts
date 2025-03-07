@@ -19,10 +19,10 @@ export function normalizeExerciseData(exercise: ExerciseData): ExerciseData {
     };
   }
 
-  // Establecer valores por defecto para campos opcionales
-  const weightUnit = exercise.weightUnit || 'kg';
-  const sets = typeof exercise.sets === 'number' ? exercise.sets : 1;
-  const repsPerSet = typeof exercise.repsPerSet === 'number' ? exercise.repsPerSet : 0;
+  // Establecer valores por defecto para campos opcionales - usar let para permitir reasignación
+  let weightUnit = exercise.weightUnit || 'kg';
+  let sets = typeof exercise.sets === 'number' ? exercise.sets : 1;
+  let repsPerSet = typeof exercise.repsPerSet === 'number' ? exercise.repsPerSet : 0;
 
   // Calcular reps basado en sets y repsPerSet, o usar reps existente
   let reps = typeof exercise.reps === 'number' ? exercise.reps : 0;
