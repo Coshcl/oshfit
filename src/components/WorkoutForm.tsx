@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Exercise, WorkoutLog } from '@/lib/types'
 import { exercises as allExercises } from '@/lib/config/exercises'
 import { v4 as uuid } from 'uuid'
+import { ExerciseInput } from './ExerciseInput'
 
 interface WorkoutFormProps {
   workoutType: 'Push' | 'Pull' | 'Legs'
