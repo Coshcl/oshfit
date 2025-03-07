@@ -1,15 +1,5 @@
-import { openai } from "@ai-sdk/openai";
-import { convertToCoreMessages, streamText } from "ai";
+import { NextResponse } from 'next/server'
 
-export const runtime = "edge";
-
-export async function POST(req: Request) {
-  const { messages } = await req.json();
-  const result = await streamText({
-    model: openai("gpt-4o"),
-    messages: convertToCoreMessages(messages),
-    system: "You are a helpful AI assistant",
-  });
-
-  return result.toDataStreamResponse();
+export async function POST() {
+  return NextResponse.json({ error: "Esta API está desactivada" }, { status: 403 })
 }

@@ -1,4 +1,9 @@
-import { useContext } from "react";
-import { AuthContext } from "../contexts/AuthContext";
+'use client'
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  return {
+    signInWithGoogle: () => {
+      console.log('Esta función está desactivada')
+    },
+  }
+}
