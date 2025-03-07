@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { WorkoutLog } from '@/lib/types'
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
-import { normalizeWorkoutLog, normalizeExerciseData } from '@/lib/utils/dataUtils'
 
 interface OshfitScoreProps {
   score: number
@@ -108,35 +107,14 @@ export function OshfitScore({ score, logs }: OshfitScoreProps) {
 }
 
 function calculateDailyScore(log: WorkoutLog): number {
-  // Normalizar el log para asegurar compatibilidad
-  const normalizedLog = normalizeWorkoutLog(log)
-  
-  const baseScore = normalizedLog.exercises.reduce((acc, exercise) => {
-    // Usar ejercicio normalizado
-    const normalized = normalizeExerciseData(exercise)
-    
-    // Calcular peso total (incluyendo barra si corresponde)
-    let totalWeight = normalized.weight
-    
-    if (normalized.includeBarWeight && normalized.barWeight) {
-      totalWeight += normalized.barWeight
-    }
-    
-    // Convertir a kg si está en libras
-    if (normalized.weightUnit === 'lb') {
-      totalWeight = totalWeight * 0.45359237
-    }
-    
-    // Calcular volumen
-    const volume = totalWeight * normalized.sets * normalized.repsPerSet
-    
-    // Calcular componentes del score
-    const weightScore = (totalWeight / 100) * 60
-    const effortScore = (normalized.perceivedEffort / 10) * 25
-    const volumeScore = (volume / 1000) * 15
-    
+  const baseScore = log.exercises.reduce((acc, exercise) => {
+    // Intercambiamos los porcentajes: ahora el peso levantado tiene más importancia (60%)
+    // y el esfuerzo percibido tiene menos (25%)
+    const weightScore = (exercise.weight / 100) * 60 // 60% del peso (antes 25%)
+    const effortScore = (exercise.perceivedEffort / 10) * 25 // 25% del peso (antes 60%)
+    const volumeScore = ((exercise.weight * exercise.reps) / 1000) * 15 // 15% del peso (sin cambios)
     return acc + weightScore + effortScore + volumeScore
-  }, 0) / normalizedLog.exercises.length
+  }, 0) / log.exercises.length
 
   // Redondear a un decimal
   return Math.round(baseScore * 10) / 10

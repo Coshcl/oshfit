@@ -1,177 +1,162 @@
 'use client'
 
-import { Exercise, WeightUnit } from '@/lib/types'
+import { Exercise } from '@/lib/types'
+import { useState } from 'react'
 
 interface ExerciseInputProps {
   exercise: Exercise
   data: {
     weight: string
-    weightUnit: WeightUnit
-    sets: string
-    repsPerSet: string
-    barWeight: string
-    includeBarWeight: boolean
+    reps: string
     effort: string
     notes: string
     useAlternative: boolean
+    weightUnit: string
+    barWeight?: number
+    sets: number
   }
   onChange: (field: string, value: string | boolean) => void
 }
 
 export function ExerciseInput({ exercise, data, onChange }: ExerciseInputProps) {
-  const currentExercise = data.useAlternative ? exercise.alternative : exercise
+  const [showAlternative, setShowAlternative] = useState(false)
+  const [currentExercise, setCurrentExercise] = useState(exercise)
+  
+  // Manejador para abrir búsqueda en YouTube
+  const handleYouTubeSearch = () => {
+    const exerciseName = showAlternative 
+      ? exercise.alternative.name 
+      : exercise.name
+    
+    const searchQuery = `cómo hacer ${exerciseName} correctamente`
+    const encodedQuery = encodeURIComponent(searchQuery)
+    window.open(`https://www.youtube.com/results?search_query=${encodedQuery}`, '_blank')
+  }
 
-  // Función para abrir búsqueda en YouTube
-  const openYouTubeSearch = () => {
-    const query = encodeURIComponent(`como hacer ${currentExercise.name}`)
-    window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank')
+  const handleChange = (field, value) => {
+    const updatedExercise = { ...currentExercise, [field]: value }
+    setCurrentExercise(updatedExercise)
+    onChange(field, value)
+  }
+
+  const handleToggleAlternative = () => {
+    setShowAlternative(!showAlternative)
+    const newExercise = showAlternative
+      ? { ...currentExercise, name: exercise.name, id: exercise.id, emoji: exercise.emoji }
+      : { ...currentExercise, name: exercise.alternative.name, id: exercise.alternative.id, emoji: exercise.alternative.emoji }
+    
+    setCurrentExercise(newExercise)
+    onChange('useAlternative', true)
   }
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <span className="text-2xl">{currentExercise.emoji}</span>
-          <button 
-            onClick={openYouTubeSearch}
-            className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
-            title="Buscar en YouTube"
+    <div className="border rounded-lg p-4 bg-white shadow-sm">
+      <div className="flex justify-between items-center mb-4">
+        <div 
+          className="flex items-center cursor-pointer" 
+          onClick={handleToggleAlternative}
+        >
+          <span className="text-2xl mr-2">
+            {showAlternative ? currentExercise.emoji : exercise.emoji}
+          </span>
+          <span 
+            className="font-medium text-blue-600 underline cursor-pointer"
+            onClick={handleYouTubeSearch}
           >
-            {currentExercise.name}
-          </button>
+            {showAlternative ? exercise.alternative.name : exercise.name}
+          </span>
         </div>
-        
         <button
           type="button"
-          onClick={() => onChange('useAlternative', !data.useAlternative)}
-          className="text-sm text-blue-600 hover:text-blue-800"
+          onClick={handleToggleAlternative}
+          className="text-xs bg-gray-100 px-2 py-1 rounded"
         >
-          {data.useAlternative ? 'Usar Principal' : 'Usar Alternativa'}
+          {showAlternative ? 'Usar principal' : 'Usar alternativa'}
         </button>
       </div>
-
-      {/* Selección de unidad de peso */}
-      <div className="flex items-center mb-3">
-        <span className="text-sm text-gray-600 mr-2">Unidad de peso:</span>
-        <div className="flex rounded-md overflow-hidden border border-gray-300">
-          <button
-            type="button"
-            onClick={() => onChange('weightUnit', 'kg')}
-            className={`px-3 py-1 text-sm ${
-              data.weightUnit === 'kg' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 hover:bg-gray-200'
-            }`}
-          >
-            kg
-          </button>
-          <button
-            type="button"
-            onClick={() => onChange('weightUnit', 'lb')}
-            className={`px-3 py-1 text-sm ${
-              data.weightUnit === 'lb' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 hover:bg-gray-200'
-            }`}
-          >
-            lb
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Peso</label>
+          <div className="flex flex-col">
+            <label className="text-xs font-medium mb-1">Peso</label>
+            <div className="flex">
+              <input
+                type="number"
+                value={currentExercise.weight}
+                onChange={(e) => handleChange('weight', parseFloat(e.target.value) || 0)}
+                className="w-full p-2 border rounded-l"
+                min="0"
+                step="0.5"
+              />
+              <select 
+                value={currentExercise.weightUnit}
+                onChange={(e) => handleChange('weightUnit', e.target.value)}
+                className="bg-gray-100 border rounded-r px-2"
+              >
+                <option value="kg">kg</option>
+                <option value="lb">lb</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <label className="text-xs font-medium mb-1">Peso de la barra</label>
+          <div className="flex">
+            <input
+              type="number"
+              value={currentExercise.barWeight || 0}
+              onChange={(e) => handleChange('barWeight', parseFloat(e.target.value) || 0)}
+              className="w-full p-2 border rounded-l"
+              min="0"
+              step="0.5"
+            />
+            <span className="bg-gray-100 border rounded-r px-2 flex items-center">
+              {currentExercise.weightUnit}
+            </span>
+          </div>
+        </div>
+        
+        <div>
+          <label className="text-xs font-medium mb-1">Series</label>
           <input
             type="number"
-            step="0.5"
-            value={data.weight}
-            onChange={(e) => onChange('weight', e.target.value)}
-            className="w-full p-2 border rounded-md"
-            placeholder="0"
+            value={currentExercise.sets}
+            onChange={(e) => handleChange('sets', parseInt(e.target.value) || 0)}
+            className="w-full p-2 border rounded"
+            min="0"
           />
         </div>
-
+        
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Sets</label>
+          <label className="text-xs font-medium mb-1">Reps por serie</label>
           <input
             type="number"
-            value={data.sets}
-            onChange={(e) => onChange('sets', e.target.value)}
-            className="w-full p-2 border rounded-md"
-            placeholder="0"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Reps/Set</label>
-          <input
-            type="number"
-            value={data.repsPerSet}
-            onChange={(e) => onChange('repsPerSet', e.target.value)}
-            className="w-full p-2 border rounded-md"
-            placeholder="0"
+            value={currentExercise.reps}
+            onChange={(e) => handleChange('reps', parseInt(e.target.value) || 0)}
+            className="w-full p-2 border rounded"
+            min="0"
           />
         </div>
       </div>
-
-      {/* Opción de peso de barra */}
-      <div className="flex items-center mb-4">
-        <input
-          type="checkbox"
-          id={`includeBar-${currentExercise.name}`}
-          checked={data.includeBarWeight}
-          onChange={(e) => onChange('includeBarWeight', e.target.checked)}
-          className="h-4 w-4 mr-2"
-        />
-        <label 
-          htmlFor={`includeBar-${currentExercise.name}`}
-          className="text-sm text-gray-600 mr-2"
-        >
-          Incluir peso de barra:
-        </label>
-        <input
-          type="number"
-          step="0.5"
-          value={data.barWeight}
-          onChange={(e) => onChange('barWeight', e.target.value)}
-          className={`w-20 p-2 border rounded-md ${!data.includeBarWeight ? 'opacity-50' : ''}`}
-          placeholder="0"
-          disabled={!data.includeBarWeight}
-        />
-        <span className="ml-1 text-sm text-gray-500">{data.weightUnit}</span>
-      </div>
-
-      <div className="mb-4">
-        <label className="block text-sm text-gray-600 mb-1">
-          Esfuerzo Percibido (1-10)
+      
+      <div className="mt-3">
+        <label className="text-xs font-medium mb-1">
+          Esfuerzo percibido (1-10): {currentExercise.effort}
         </label>
         <input
           type="range"
           min="1"
           max="10"
-          value={data.effort || '1'}
-          onChange={(e) => onChange('effort', e.target.value)}
+          value={currentExercise.effort}
+          onChange={(e) => handleChange('effort', parseInt(e.target.value))}
           className="w-full"
         />
         <div className="flex justify-between text-xs text-gray-500">
-          <span>1</span>
-          <span>5</span>
-          <span>10</span>
+          <span>Fácil</span>
+          <span>Moderado</span>
+          <span>Difícil</span>
         </div>
-      </div>
-
-      <div>
-        <label className="block text-sm text-gray-600 mb-1">
-          Notas (opcional)
-        </label>
-        <input
-          type="text"
-          value={data.notes}
-          onChange={(e) => onChange('notes', e.target.value)}
-          className="w-full p-2 border rounded-md"
-          placeholder="Ej: Aumenté el peso en la última serie"
-        />
       </div>
     </div>
   )

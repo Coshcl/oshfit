@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
 import clientPromise from '@/lib/db/mongodb'
-import { UserType, ExerciseData, WorkoutLog } from '@/lib/types'
+import { UserType } from '@/lib/types'
 import { ObjectId } from 'mongodb'
-import { normalizeExerciseData, normalizeWorkoutLog } from '@/lib/utils/dataUtils'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -35,34 +34,27 @@ export async function POST(request: Request) {
 
     const client = await clientPromise
     
-    // Normalizar el workout completo
-    const normalizedWorkout = {
-      ...workout,
-      exercises: (workout.exercises || []).map((ex: ExerciseData) => normalizeExerciseData(ex))
-    }
-    
-    // Guardar entrenamiento normalizado
+    // Primero guardar el entrenamiento
     const workoutCollection = client.db('oshfit').collection('workouts')
-    const workoutToSave = {
-      ...normalizedWorkout,
+    const workoutResult = await workoutCollection.insertOne({
+      ...workout,
       userId,
       createdAt: new Date()
-    }
+    })
     
-    const workoutResult = await workoutCollection.insertOne(workoutToSave)
-    
-    // Actualizar usuario
+    // Luego actualizar el usuario para incluir el entrenamiento en sus logs
     try {
       const userCollection = client.db('oshfit').collection('users')
       await userCollection.updateOne(
         { id: userId },
         { 
-          $push: { logs: workoutToSave },
+          $push: { logs: workout },
           $set: { updatedAt: new Date() }
         }
       )
-    } catch (error) {
-      console.error('Error actualizando usuario:', error)
+    } catch (userUpdateError) {
+      console.error('Error actualizando usuario con el nuevo entrenamiento:', userUpdateError)
+      // Continuar aunque falle la actualización del usuario
     }
     
     return NextResponse.json({ 
@@ -71,7 +63,10 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('Error añadiendo entrenamiento:', error)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Error interno del servidor',
+      details: String(error)
+    }, { status: 500 })
   }
 }
 
@@ -86,24 +81,14 @@ export async function PUT(request: Request) {
     const client = await clientPromise
     const collection = client.db('oshfit').collection('workouts')
     
-    // Normalizar los datos de ejercicios
-    const normalizedExercises = workout.exercises.map((exercise: ExerciseData) => ({
-      ...exercise,
-      weightUnit: exercise.weightUnit || 'kg',
-      sets: exercise.sets || 1,
-      repsPerSet: exercise.repsPerSet || 0,
-      reps: exercise.reps || (exercise.sets && exercise.repsPerSet ? exercise.sets * exercise.repsPerSet : 0)
-    }))
-    
-    const workoutToUpdate = {
-      ...workout,
-      exercises: normalizedExercises,
-      updatedAt: new Date()
-    }
-    
     const result = await collection.updateOne(
       { id: workoutId },
-      { $set: workoutToUpdate }
+      { 
+        $set: {
+          ...workout,
+          updatedAt: new Date()
+        }
+      }
     )
     
     // También actualizar el entrenamiento en el array de logs del usuario
@@ -114,7 +99,7 @@ export async function PUT(request: Request) {
           { id: workout.userId },
           { 
             $set: { 
-              "logs.$[elem]": workoutToUpdate,
+              "logs.$[elem]": workout,
               updatedAt: new Date()
             }
           },

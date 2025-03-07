@@ -106,7 +106,7 @@ export default function DashboardPage({
       <UserStats logs={user.logs} />
 
       {/* Lista de logros */}
-      <AchievementsList achievements={user.achievements} user={user} />
+      <AchievementsList achievements={user.achievements} />
     </div>
   )
 } 

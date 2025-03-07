@@ -2,29 +2,19 @@
 
 import { WorkoutLog } from '@/lib/types'
 import { useUser } from '@/lib/contexts/UserContext'
-import { normalizeExerciseData, normalizeWorkoutLog } from '@/lib/utils/dataUtils'
 
 interface WorkoutLogDetailsProps {
   log: WorkoutLog
   onClose: () => void
-  onDelete?: (id: string) => void
 }
 
-export function WorkoutLogDetails({ log, onClose, onDelete }: WorkoutLogDetailsProps) {
+export function WorkoutLogDetails({ log, onClose }: WorkoutLogDetailsProps) {
   const { deleteWorkoutLog } = useUser()
 
-  // Normalizar log para garantizar compatibilidad
-  const normalizedLog = normalizeWorkoutLog(log)
-
   const handleDelete = () => {
-    if (onDelete) {
-      onDelete(log.id)
+    if (confirm('¿Estás seguro de que quieres eliminar este entrenamiento?')) {
+      deleteWorkoutLog(log.id)
       onClose()
-    } else {
-      if (confirm('¿Estás seguro de que quieres eliminar este entrenamiento?')) {
-        deleteWorkoutLog(log.id)
-        onClose()
-      }
     }
   }
 
@@ -36,98 +26,76 @@ export function WorkoutLogDetails({ log, onClose, onDelete }: WorkoutLogDetailsP
     day: 'numeric'
   })
 
-  const formattedDateTime = log.startTime 
-    ? new Date(log.startTime).toLocaleString() 
-    : new Date(log.date).toLocaleDateString()
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-auto">
-        <div className="p-4 border-b sticky top-0 bg-white flex justify-between items-center">
-          <h2 className="text-xl font-bold">{log.type} - {formattedDateTime}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-4">
+      <div className="bg-white rounded-t-lg sm:rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+          <div>
+            <h2 className="text-lg font-semibold">{formattedDate}</h2>
+            <p className="text-sm text-gray-500">Entrenamiento de {log.type}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
             ✕
           </button>
         </div>
-        
-        <div className="p-4">
-          {/* Información general */}
-          <div className="mb-4">
-            {log.bodyWeight && (
-              <p className="text-gray-600 mb-2">
-                Peso corporal: {log.bodyWeight} {log.bodyWeightUnit || 'kg'}
-              </p>
-            )}
-            
-            {log.duration && (
-              <p className="text-gray-600 mb-2">
-                Duración: {log.duration} minutos
-              </p>
-            )}
-            
-            {log.notes && (
-              <div className="bg-blue-50 p-3 rounded-lg mt-2">
-                <p className="text-sm font-medium text-blue-800">Notas:</p>
-                <p className="text-sm text-blue-700">{log.notes}</p>
-              </div>
-            )}
-          </div>
-          
-          {/* Lista de ejercicios */}
-          <div className="space-y-3">
-            <h3 className="font-medium text-gray-700">Ejercicios:</h3>
-            
-            {normalizedLog.exercises.map((exercise, index) => {
-              // Normalizar ejercicio
-              const normalized = normalizeExerciseData(exercise)
-              
-              // Calcular peso total con barra si corresponde
-              const totalWeight = normalized.includeBarWeight && normalized.barWeight
-                ? normalized.weight + normalized.barWeight
-                : normalized.weight
-                
-              return (
-                <div 
-                  key={index} 
-                  className="bg-gray-50 p-3 rounded-lg flex items-start"
-                >
-                  <div className="text-2xl mr-3">{normalized.emoji}</div>
+
+        <div className="p-4 space-y-6">
+          {/* Peso corporal */}
+          {log.bodyWeight && (
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Peso Corporal</span>
+              <span className="font-medium">{log.bodyWeight} kg</span>
+            </div>
+          )}
+
+          {/* Ejercicios */}
+          <div className="space-y-4">
+            {log.exercises.map((exercise, index) => (
+              <div
+                key={index}
+                className="bg-gray-50 rounded-lg p-4"
+              >
+                <div className="flex items-center space-x-2 mb-3">
+                  <span className="text-2xl">{exercise.emoji}</span>
+                  <span className="font-medium">{exercise.exerciseName}</span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
-                    <p className="font-medium">{normalized.exerciseName}</p>
-                    <p className="text-sm text-gray-600">
-                      {totalWeight} {normalized.weightUnit} × {normalized.sets} sets × {normalized.repsPerSet} reps
-                    </p>
-                    {normalized.includeBarWeight && normalized.barWeight > 0 && (
-                      <p className="text-xs text-gray-500">
-                        (Incluye barra de {normalized.barWeight} {normalized.weightUnit})
-                      </p>
-                    )}
-                    <div className="mt-1 flex items-center">
-                      <div className="text-xs text-gray-500 mr-2">Esfuerzo:</div>
-                      <div className="bg-blue-100 px-2 py-0.5 rounded text-xs font-medium text-blue-800">
-                        {normalized.perceivedEffort}/10
-                      </div>
-                    </div>
-                    {normalized.notes && (
-                      <p className="text-xs text-gray-500 mt-1">{normalized.notes}</p>
-                    )}
+                    <p className="text-gray-500">Peso</p>
+                    <p className="font-medium">{exercise.weight} kg</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Reps</p>
+                    <p className="font-medium">{exercise.reps}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Esfuerzo</p>
+                    <p className="font-medium">{exercise.perceivedEffort}/10</p>
                   </div>
                 </div>
-              )
-            })}
+
+                {exercise.notes && (
+                  <p className="mt-2 text-sm text-gray-600">
+                    {exercise.notes}
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
+
+          {/* Botón de eliminar */}
+          <button
+            onClick={handleDelete}
+            className="w-full py-2 text-red-600 hover:text-red-800
+                     border-t border-gray-200 mt-4"
+          >
+            Eliminar Entrenamiento
+          </button>
         </div>
-        
-        {onDelete && (
-          <div className="p-4 border-t">
-            <button
-              onClick={handleDelete}
-              className="w-full py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-            >
-              Eliminar entrenamiento
-            </button>
-          </div>
-        )}
       </div>
     </div>
   )

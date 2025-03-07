@@ -4,150 +4,210 @@ export const achievements: Achievement[] = [
   {
     id: 'first_log',
     name: 'First Steps',
-    description: 'Completaste tu primer entrenamiento',
+    description: 'Completed your first workout log',
     emoji: '🎯',
     isUnlocked: false
   },
   {
     id: 'first_push',
     name: 'Push Master',
-    description: 'Completaste tu primer entrenamiento Push',
+    description: 'Completed your first Push workout',
     emoji: '💪',
     isUnlocked: false
   },
   {
     id: 'first_pull',
     name: 'Pull Expert',
-    description: 'Completaste tu primer entrenamiento Pull',
+    description: 'Completed your first Pull workout',
     emoji: '🏋️‍♂️',
     isUnlocked: false
   },
   {
     id: 'first_legs',
     name: 'Leg Day Champion',
-    description: 'Completaste tu primer entrenamiento Legs',
+    description: 'Completed your first Legs workout',
     emoji: '🦵',
     isUnlocked: false
   },
   {
     id: 'perfect_log',
     name: 'Perfectionist',
-    description: 'Completaste un log perfecto sin errores',
+    description: 'Completed a perfect log with no errors',
     emoji: '✨',
     isUnlocked: false
   },
   {
     id: 'seven_days',
     name: 'Week Warrior',
-    description: '7 días consecutivos de entrenamiento',
+    description: '7 consecutive days of logging',
     emoji: '📅',
-    isUnlocked: false,
-    progressTrackable: true
+    isUnlocked: false
   },
   {
     id: 'weight_increase',
     name: 'Getting Stronger',
-    description: 'Incremento del 5% en peso en cualquier ejercicio',
+    description: '5% weight increase in any exercise',
     emoji: '📈',
-    isUnlocked: false,
-    progressTrackable: true
+    isUnlocked: false
   },
   {
     id: 'max_effort',
     name: 'All Out',
-    description: 'Esfuerzo percibido de 10 en un ejercicio',
+    description: 'Recorded a perceived effort of 10',
     emoji: '🔥',
     isUnlocked: false
   },
   {
     id: 'score_improvement',
     name: 'Score Chaser',
-    description: 'Superaste tu Oshfit Score anterior',
+    description: 'Beat your previous Oshfit Score',
     emoji: '🏆',
     isUnlocked: false
   },
   {
     id: 'consistency',
     name: 'Consistency King',
-    description: '30 días de entrenamiento consecutivo',
+    description: '30 days of consecutive logging',
     emoji: '👑',
-    isUnlocked: false,
-    progressTrackable: true
+    isUnlocked: false
   },
   {
     id: 'early_bird',
     name: 'Madrugador',
-    description: 'Completar un entrenamiento antes de las 8 AM',
+    description: 'Completar un entrenamiento antes de las 7:00 AM',
     emoji: '🌅',
-    isUnlocked: false
+    isUnlocked: false,
+    progress: 0,
+    requiredProgress: 1,
+    criteria: {
+      type: 'time',
+      condition: 'before',
+      value: '07:00'
+    }
   },
   {
     id: 'night_owl',
     name: 'Búho Nocturno',
-    description: 'Completar un entrenamiento después de las 9 PM',
+    description: 'Completar un entrenamiento después de las 9:00 PM',
     emoji: '🦉',
-    isUnlocked: false
+    isUnlocked: false,
+    progress: 0,
+    requiredProgress: 1,
+    criteria: {
+      type: 'time',
+      condition: 'after',
+      value: '21:00'
+    }
   },
   {
-    id: 'iron_marathon',
-    name: 'Maratonista de Hierro',
-    description: 'Entrenamiento de más de 90 minutos',
+    id: 'marathon_session',
+    name: 'Maratonista',
+    description: 'Completar un entrenamiento de más de 90 minutos',
     emoji: '⏱️',
-    isUnlocked: false
+    isUnlocked: false,
+    progress: 0,
+    requiredProgress: 1,
+    criteria: {
+      type: 'duration',
+      condition: 'more',
+      value: 90
+    }
   },
   {
-    id: 'extreme_efficiency',
-    name: 'Eficiencia Extrema',
-    description: 'Entrenamiento de alta calidad en menos de 45 minutos',
+    id: 'efficiency',
+    name: 'Eficiencia Máxima',
+    description: 'Completar un entrenamiento efectivo en menos de 45 minutos',
     emoji: '⚡',
-    isUnlocked: false
-  },
-  {
-    id: 'triple_crown',
-    name: 'Triple Corona',
-    description: 'Push, Pull y Legs en una misma semana',
-    emoji: '👑',
     isUnlocked: false,
-    progressTrackable: true
+    progress: 0,
+    requiredProgress: 1,
+    criteria: {
+      type: 'duration',
+      condition: 'less',
+      value: 45
+    }
   },
   {
-    id: 'consistency_artist',
-    name: 'Artista de la Consistencia',
-    description: 'Mismo día de la semana durante 4 semanas consecutivas',
-    emoji: '🎨',
+    id: 'heavy_lifter',
+    name: 'Peso Pesado',
+    description: 'Levantar más de 100kg/220lb en cualquier ejercicio',
+    emoji: '🏋️',
     isUnlocked: false,
-    progressTrackable: true
+    progress: 0,
+    requiredProgress: 1,
+    criteria: {
+      type: 'weight',
+      condition: 'more',
+      value: 100
+    }
   },
   {
-    id: 'volume_master',
-    name: 'Maestro del Volumen',
-    description: '10.000 kg de volumen total en un entrenamiento',
+    id: 'balanced',
+    name: 'Equilibrado',
+    description: 'Realizar al menos 3 entrenamientos de cada tipo (Push, Pull, Legs) en un mes',
+    emoji: '⚖️',
+    isUnlocked: false,
+    progress: 0,
+    requiredProgress: 9,
+    criteria: {
+      type: 'balance',
+      value: 3
+    }
+  },
+  {
+    id: 'weekend_warrior',
+    name: 'Guerrero de Fin de Semana',
+    description: 'Completar entrenamientos en 4 fines de semana consecutivos',
+    emoji: '🏆',
+    isUnlocked: false,
+    progress: 0,
+    requiredProgress: 4,
+    criteria: {
+      type: 'weekend',
+      condition: 'consecutive',
+      value: 4
+    }
+  },
+  {
+    id: 'high_volume',
+    name: 'Alto Volumen',
+    description: 'Realizar más de 100 repeticiones totales en un entrenamiento',
     emoji: '📊',
     isUnlocked: false,
-    progressTrackable: true
+    progress: 0,
+    requiredProgress: 1,
+    criteria: {
+      type: 'volume',
+      condition: 'more',
+      value: 100
+    }
   },
   {
-    id: 'multifaceted',
-    name: 'Multifacético',
-    description: 'Al menos 8 ejercicios diferentes en un entrenamiento',
-    emoji: '🔄',
+    id: 'notes_master',
+    name: 'Maestro de Notas',
+    description: 'Añadir notas detalladas a 10 entrenamientos consecutivos',
+    emoji: '📝',
     isUnlocked: false,
-    progressTrackable: true
+    progress: 0,
+    requiredProgress: 10,
+    criteria: {
+      type: 'notes',
+      condition: 'consecutive',
+      value: 10
+    }
   },
   {
-    id: 'experimenter',
-    name: 'Experimentador',
-    description: 'Usar todas las alternativas de ejercicios al menos una vez',
-    emoji: '🧪',
+    id: 'consistency_king',
+    name: 'Rey de la Consistencia',
+    description: 'Mantener una diferencia de menos de 5% en peso entre 5 sesiones del mismo ejercicio',
+    emoji: '👑',
     isUnlocked: false,
-    progressTrackable: true
-  },
-  {
-    id: 'personal_best',
-    name: 'Superación Personal',
-    description: 'Aumentar peso en un ejercicio 5 semanas consecutivas',
-    emoji: '🚀',
-    isUnlocked: false,
-    progressTrackable: true
+    progress: 0,
+    requiredProgress: 5,
+    criteria: {
+      type: 'consistency',
+      condition: 'less',
+      value: 5
+    }
   }
 ]; 
