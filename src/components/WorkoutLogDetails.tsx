@@ -74,10 +74,19 @@ export function WorkoutLogDetails({ log, onClose, onDelete }: WorkoutLogDetailsP
             <h3 className="font-medium text-gray-700">Ejercicios:</h3>
             
             {log.exercises.map((exercise, index) => {
+              // Compatibilidad: obtener reps ya sea del antiguo o del nuevo formato
+              const reps = exercise.reps || (exercise.sets && exercise.repsPerSet 
+                ? exercise.sets * exercise.repsPerSet 
+                : 0);
+              
+              // Para compatibilidad con formato antiguo
+              const sets = exercise.sets || 1;
+              const repsPerSet = exercise.repsPerSet || exercise.reps || 0;
+              
               // Calcular peso total con barra si corresponde
-              const totalWeight = exercise.includeBarWeight && exercise.barWeight
+              const totalWeight = (exercise.includeBarWeight && exercise.barWeight && exercise.barWeight > 0)
                 ? exercise.weight + exercise.barWeight
-                : exercise.weight
+                : exercise.weight;
                 
               return (
                 <div 
@@ -88,11 +97,11 @@ export function WorkoutLogDetails({ log, onClose, onDelete }: WorkoutLogDetailsP
                   <div>
                     <p className="font-medium">{exercise.exerciseName}</p>
                     <p className="text-sm text-gray-600">
-                      {totalWeight} {exercise.weightUnit} × {exercise.sets} sets × {exercise.repsPerSet} reps
+                      {totalWeight} {exercise.weightUnit || 'kg'} × {sets} sets × {repsPerSet} reps
                     </p>
-                    {exercise.includeBarWeight && exercise.barWeight > 0 && (
+                    {exercise.includeBarWeight && exercise.barWeight && exercise.barWeight > 0 && (
                       <p className="text-xs text-gray-500">
-                        (Incluye barra de {exercise.barWeight} {exercise.weightUnit})
+                        (Incluye barra de {exercise.barWeight} {exercise.weightUnit || 'kg'})
                       </p>
                     )}
                     <div className="mt-1 flex items-center">
@@ -101,6 +110,9 @@ export function WorkoutLogDetails({ log, onClose, onDelete }: WorkoutLogDetailsP
                         {exercise.perceivedEffort}/10
                       </div>
                     </div>
+                    {exercise.notes && (
+                      <p className="text-xs text-gray-500 mt-1">{exercise.notes}</p>
+                    )}
                   </div>
                 </div>
               )

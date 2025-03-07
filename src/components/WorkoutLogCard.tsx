@@ -24,18 +24,25 @@ export function WorkoutLogCard({ log, previousLog, onDelete }: WorkoutLogCardPro
 
     if (!previousExercise) return null
 
+    // Compatibilidad: normalizar unidades de peso
+    const weightUnit = exercise.weightUnit || 'kg'
+    const prevWeightUnit = previousExercise.weightUnit || 'kg'
+
     // Convertir pesos a la misma unidad (kg) para comparación
-    const currentWeight = exercise.weightUnit === 'lb' 
+    const currentWeight = weightUnit === 'lb' 
       ? exercise.weight * 0.45359237 
       : exercise.weight
       
-    const previousWeight = previousExercise.weightUnit === 'lb'
+    const previousWeight = prevWeightUnit === 'lb'
       ? previousExercise.weight * 0.45359237
       : previousExercise.weight
 
-    // Calcular repeticiones totales (sets * repsPerSet)
-    const currentReps = (exercise.sets || 0) * (exercise.repsPerSet || 0)
-    const previousReps = (previousExercise.sets || 0) * (previousExercise.repsPerSet || 0)
+    // Compatibilidad: calcular repeticiones tanto del viejo como del nuevo formato
+    const currentReps = exercise.reps || 
+      ((exercise.sets || 1) * (exercise.repsPerSet || 0))
+      
+    const previousReps = previousExercise.reps || 
+      ((previousExercise.sets || 1) * (previousExercise.repsPerSet || 0))
 
     if (currentWeight > previousWeight) {
       return {

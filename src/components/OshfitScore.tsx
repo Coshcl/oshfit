@@ -108,6 +108,10 @@ export function OshfitScore({ score, logs }: OshfitScoreProps) {
 
 function calculateDailyScore(log: WorkoutLog): number {
   const baseScore = log.exercises.reduce((acc, exercise) => {
+    // Compatibilidad con formato antiguo y nuevo
+    const sets = exercise.sets || 1;
+    const repsPerSet = exercise.repsPerSet || exercise.reps || 0;
+    
     // Calcular peso total (incluyendo barra si corresponde)
     let totalWeight = exercise.weight;
     
@@ -121,7 +125,7 @@ function calculateDailyScore(log: WorkoutLog): number {
     }
     
     // Calcular volumen (peso * sets * reps)
-    const volume = totalWeight * (exercise.sets || 1) * (exercise.repsPerSet || 1);
+    const volume = totalWeight * sets * repsPerSet;
     
     // Calcular los componentes del score
     const weightScore = (totalWeight / 100) * 60; // 60% del peso

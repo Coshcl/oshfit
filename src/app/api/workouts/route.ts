@@ -36,11 +36,23 @@ export async function POST(request: Request) {
     
     // Primero guardar el entrenamiento
     const workoutCollection = client.db('oshfit').collection('workouts')
-    const workoutResult = await workoutCollection.insertOne({
+    const normalizedExercises = workout.exercises.map(exercise => ({
+      ...exercise,
+      weightUnit: exercise.weightUnit || 'kg',
+      sets: exercise.sets || 1,
+      repsPerSet: exercise.repsPerSet || 0,
+      // Mantener reps para compatibilidad
+      reps: exercise.reps || (exercise.sets * exercise.repsPerSet)
+    }))
+
+    const workoutToSave = {
       ...workout,
+      exercises: normalizedExercises,
       userId,
       createdAt: new Date()
-    })
+    }
+    
+    const workoutResult = await workoutCollection.insertOne(workoutToSave)
     
     // Luego actualizar el usuario para incluir el entrenamiento en sus logs
     try {

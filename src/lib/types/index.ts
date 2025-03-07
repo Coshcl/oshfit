@@ -18,9 +18,10 @@ export interface ExerciseData {
   exerciseName: string;
   emoji: string;
   weight: number;
-  weightUnit: WeightUnit;
-  sets: number;
-  repsPerSet: number;
+  weightUnit?: WeightUnit;
+  sets?: number;
+  repsPerSet?: number;
+  reps?: number;
   barWeight?: number;
   includeBarWeight?: boolean;
   perceivedEffort: number;
@@ -30,13 +31,13 @@ export interface ExerciseData {
 export interface WorkoutLog {
   id: string;
   date: string;
-  startTime?: string; // ISO string for the start time
-  duration?: number; // in minutes
+  startTime?: string;
+  duration?: number;
   type: WorkoutType;
   bodyWeight?: number;
   bodyWeightUnit?: WeightUnit;
   exercises: ExerciseData[];
-  notes?: string; // General notes for the entire workout
+  notes?: string;
 }
 
 export interface Achievement {
@@ -46,7 +47,7 @@ export interface Achievement {
   emoji: string;
   unlockedAt?: string;
   isUnlocked: boolean;
-  progressTrackable?: boolean; // Indicates if we can track progress for this achievement
+  progressTrackable?: boolean;
 }
 
 export interface UserProfile {
