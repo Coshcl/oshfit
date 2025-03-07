@@ -1,27 +1,42 @@
 import { NextResponse } from 'next/server'
-import { getUserById, createUser } from '@/lib/db/models/user'
-import { UserProfile } from '@/lib/types'
+import { getUserById, getUserByUsername, createUser } from '@/lib/db/models/user'
+import { UserProfile, UserType } from '@/lib/types'
 
 export async function POST(request: Request) {
   try {
     const userData = await request.json()
     
     // Validaciones básicas
-    if (!userData.id || !userData.name || !userData.password) {
+    if (!userData.name || !userData.password) {
       return NextResponse.json({ error: 'Faltan datos obligatorios' }, { status: 400 })
     }
     
-    // Comprobar si el usuario ya existe
-    const existingUser = await getUserById(userData.id)
+    // Confirmar que el nombre de usuario no existe ya
+    const existingUser = await getUserByUsername(userData.name.toLowerCase())
     if (existingUser) {
       return NextResponse.json({ error: 'El nombre de usuario ya está en uso' }, { status: 409 })
     }
+
+    // Crear un ID compatible con UserType
+    const username = userData.name.toLowerCase()
+    
+    // Si es un nombre predefinido, usar el formato exacto
+    let userId: UserType
+    const predefinedUsers = ['cosh', 'rosch', 'maquin', 'flosh']
+    
+    if (predefinedUsers.includes(username)) {
+      // Usar el formato exacto para usuarios predefinidos (Cosh, Rosch, etc.)
+      userId = username.charAt(0).toUpperCase() + username.slice(1) as UserType
+    } else {
+      // Para usuarios personalizados, asignar uno de los tipos permitidos
+      // con un identificador personalizado, por ejemplo, agregando un prefijo
+      userId = 'Custom' as UserType
+    }
     
     // Preparar el usuario para almacenar
-    // NOTA: En producción, se debería hashear la contraseña
     const newUser: UserProfile & { password: string } = {
-      id: userData.id,
-      name: userData.name,
+      id: userId,
+      name: username,
       logs: [],
       achievements: userData.achievements || [],
       oshfitScore: 0,

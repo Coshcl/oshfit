@@ -1,4 +1,4 @@
-export type UserType = 'Rosch' | 'Cosh' | 'Maquin' | 'Flosh';
+export type UserType = 'Rosch' | 'Cosh' | 'Maquin' | 'Flosh' | 'Custom';
 
 export type WorkoutType = 'Push' | 'Pull' | 'Legs';
 

@@ -46,16 +46,12 @@ export default function RegisterPage() {
     setLoading(true)
     
     try {
-      // Crear nuevo usuario
-      const userId = formData.username.charAt(0).toUpperCase() + formData.username.slice(1).toLowerCase()
-      
+      // Crear nuevo usuario, simplemente enviar el nombre y la contraseña
+      // La API se encargará de asignar el ID correcto
       const newUser = {
-        id: userId,
         name: formData.username.toLowerCase(),
-        password: formData.password, // En producción esto debería estar hasheado
-        logs: [],
-        achievements: achievements,
-        oshfitScore: 0
+        password: formData.password,
+        achievements: achievements
       }
       
       // Enviar a la API

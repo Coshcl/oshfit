@@ -2,6 +2,7 @@ import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { getUserById, getUserByUsername, createUser, validateUserCredentials } from '@/lib/db/models/user'
 import { achievements } from '@/lib/config/achievements'
+import { UserType } from '@/lib/types'
 
 const handler = NextAuth({
   providers: [
@@ -25,7 +26,10 @@ const handler = NextAuth({
         
         // Si no existe y es uno de los usuarios predefinidos, crearlo
         if (!user && ['cosh', 'rosch', 'maquin', 'flosh'].includes(username)) {
-          const userId = username.charAt(0).toUpperCase() + username.slice(1)
+          // Asegurarnos de que el ID coincida exactamente con uno de los tipos UserType
+          // Primera letra mayúscula y resto minúscula para coincidir con 'Cosh', 'Rosch', etc.
+          const userId = username.charAt(0).toUpperCase() + username.slice(1).toLowerCase() as UserType
+          
           const newUser = {
             id: userId,
             name: username,
