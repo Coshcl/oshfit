@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import clientPromise from '@/lib/db/mongodb'
 import { UserType } from '@/lib/types'
 import { ObjectId } from 'mongodb'
+import { NextRequest } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { saveWorkoutLog } from '@/lib/db/workoutLogs'
+import { checkAchievements } from '@/lib/utils/achievementUtils'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -24,49 +29,65 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { userId, workout } = await request.json()
-
-    if (!userId || !workout) {
-      return NextResponse.json({ error: 'userId y workout son requeridos' }, { status: 400 })
-    }
-
-    const client = await clientPromise
+    const session = await getServerSession(authOptions)
     
-    // Primero guardar el entrenamiento
-    const workoutCollection = client.db('oshfit').collection('workouts')
-    const workoutResult = await workoutCollection.insertOne({
-      ...workout,
-      userId,
-      createdAt: new Date()
-    })
-    
-    // Luego actualizar el usuario para incluir el entrenamiento en sus logs
-    try {
-      const userCollection = client.db('oshfit').collection('users')
-      await userCollection.updateOne(
-        { id: userId },
-        { 
-          $push: { logs: workout },
-          $set: { updatedAt: new Date() }
-        }
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
       )
-    } catch (userUpdateError) {
-      console.error('Error actualizando usuario con el nuevo entrenamiento:', userUpdateError)
-      // Continuar aunque falle la actualización del usuario
     }
     
-    return NextResponse.json({ 
-      success: true,
-      workoutId: workoutResult.insertedId
-    })
+    const userId = session.user.id
+    const data = await req.json()
+    
+    // Validar datos mínimos
+    if (!data.exercises || !Array.isArray(data.exercises) || data.exercises.length === 0) {
+      return NextResponse.json(
+        { error: 'Se requiere al menos un ejercicio' },
+        { status: 400 }
+      )
+    }
+    
+    // Crear objeto para guardar en la base de datos
+    const workoutData = {
+      userId,
+      date: new Date(),
+      bodyWeight: data.bodyWeight,
+      bodyWeightUnit: data.bodyWeightUnit,
+      exercises: data.exercises.map((ex: any) => ({
+        exerciseName: ex.exerciseName,
+        emoji: ex.emoji || '💪',
+        weight: ex.weight || 0,
+        weightUnit: ex.weightUnit || 'kg',
+        sets: ex.sets || 0,
+        reps: ex.reps || 0,
+        perceivedEffort: ex.perceivedEffort || 0
+      })),
+      notes: data.notes,
+      duration: data.duration,
+      cardioAfter: data.cardioAfter || false,
+      cardioMinutes: data.cardioMinutes,
+      type: data.type || 'general'
+    }
+    
+    // Guardar en la base de datos
+    const savedWorkout = await saveWorkoutLog(workoutData)
+    
+    // Verificar y actualizar logros
+    if (savedWorkout) {
+      await checkAchievements(userId)
+    }
+    
+    return NextResponse.json(savedWorkout)
   } catch (error) {
-    console.error('Error añadiendo entrenamiento:', error)
-    return NextResponse.json({ 
-      error: 'Error interno del servidor',
-      details: String(error)
-    }, { status: 500 })
+    console.error('Error al guardar entrenamiento:', error)
+    return NextResponse.json(
+      { error: 'Error al procesar la solicitud' },
+      { status: 500 }
+    )
   }
 }
 

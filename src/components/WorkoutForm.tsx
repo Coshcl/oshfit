@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Exercise, WeightUnit, WorkoutType } from '@/lib/types'
 import { ExerciseInput } from './ExerciseInput'
 import { useUser } from '@/lib/contexts/UserContext'
@@ -15,7 +15,6 @@ interface WorkoutFormProps {
       emoji: string
       weight: number
       weightUnit: WeightUnit
-      barWeight?: number
       sets: number
       reps: number
       perceivedEffort: number
@@ -23,6 +22,7 @@ interface WorkoutFormProps {
     notes?: string
     duration?: number
     cardioAfter?: boolean
+    cardioMinutes?: number
     type: WorkoutType
   }) => void
   workoutType: WorkoutType
@@ -37,11 +37,11 @@ export function WorkoutForm({ exercises, onSubmit, workoutType }: WorkoutFormPro
   const [notes, setNotes] = useState<string>('')
   const [duration, setDuration] = useState<string>('')
   const [cardioAfter, setCardioAfter] = useState<boolean>(false)
+  const [cardioMinutes, setCardioMinutes] = useState<string>('')
   const [exerciseData, setExerciseData] = useState<{
     [key: string]: {
       weight: string
       weightUnit: WeightUnit
-      barWeight: string
       sets: string
       reps: string
       effort: string
@@ -62,6 +62,13 @@ export function WorkoutForm({ exercises, onSubmit, workoutType }: WorkoutFormPro
     minute: '2-digit'
   })
 
+  // Reiniciar cardioMinutes cuando se desactiva el checkbox
+  useEffect(() => {
+    if (!cardioAfter) {
+      setCardioMinutes('');
+    }
+  }, [cardioAfter]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -72,22 +79,21 @@ export function WorkoutForm({ exercises, onSubmit, workoutType }: WorkoutFormPro
         const data = exerciseData[exercise.name] || {
           weight: '0',
           weightUnit: preferredUnit,
-          barWeight: '0',
           sets: '0',
           reps: '0',
           effort: '0',
           useAlternative: false
         }
 
-        const exerciseInfo = data.useAlternative ? exercise.alternative : exercise
-        const barWeight = parseFloat(data.barWeight) || 0
+        const exerciseInfo = data.useAlternative && exercise.alternativeExercise 
+          ? { name: exercise.alternativeExercise, emoji: exercise.emoji } 
+          : exercise
 
         return {
           exerciseName: exerciseInfo.name,
-          emoji: exerciseInfo.emoji,
+          emoji: exerciseInfo.emoji || '💪',
           weight: parseFloat(data.weight) || 0,
           weightUnit: data.weightUnit,
-          barWeight: barWeight > 0 ? barWeight : undefined,
           sets: parseInt(data.sets) || 0,
           reps: parseInt(data.reps) || 0,
           perceivedEffort: parseInt(data.effort) || 0
@@ -96,6 +102,7 @@ export function WorkoutForm({ exercises, onSubmit, workoutType }: WorkoutFormPro
       notes: notes || undefined,
       duration: duration ? parseInt(duration) : undefined,
       cardioAfter,
+      cardioMinutes: cardioAfter && cardioMinutes ? parseInt(cardioMinutes) : undefined,
       type: workoutType
     }
 
@@ -123,7 +130,6 @@ export function WorkoutForm({ exercises, onSubmit, workoutType }: WorkoutFormPro
         [exerciseName]: {
           weight: '',
           weightUnit: preferredUnit,
-          barWeight: '',
           sets: '',
           reps: '',
           effort: '',
@@ -167,7 +173,7 @@ export function WorkoutForm({ exercises, onSubmit, workoutType }: WorkoutFormPro
             className="bg-gray-100 border border-l-0 rounded-r-md px-2"
           >
             <option value="kg">kg</option>
-            <option value="lb">lb</option>
+            <option value="lbs">lbs</option>
           </select>
         </div>
       </div>
@@ -181,7 +187,6 @@ export function WorkoutForm({ exercises, onSubmit, workoutType }: WorkoutFormPro
             data={exerciseData[exercise.name] || {
               weight: '',
               weightUnit: preferredUnit,
-              barWeight: '',
               sets: '',
               reps: '',
               effort: '',
@@ -223,17 +228,34 @@ export function WorkoutForm({ exercises, onSubmit, workoutType }: WorkoutFormPro
           />
         </div>
 
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="cardioAfter"
-            checked={cardioAfter}
-            onChange={(e) => setCardioAfter(e.target.checked)}
-            className="h-4 w-4 text-blue-600 rounded"
-          />
-          <label htmlFor="cardioAfter" className="ml-2 text-sm text-gray-700">
-            Hice cardio después del entrenamiento
-          </label>
+        <div className="flex flex-col space-y-2">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="cardioAfter"
+              checked={cardioAfter}
+              onChange={(e) => setCardioAfter(e.target.checked)}
+              className="h-4 w-4 text-blue-600 rounded"
+            />
+            <label htmlFor="cardioAfter" className="ml-2 text-sm text-gray-700">
+              También hice cardio durante este entrenamiento
+            </label>
+          </div>
+          
+          {cardioAfter && (
+            <div className="pl-6 mt-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                ¿Cuántos minutos de cardio?
+              </label>
+              <input
+                type="number"
+                value={cardioMinutes}
+                onChange={(e) => setCardioMinutes(e.target.value)}
+                placeholder="Minutos de cardio"
+                className="w-full p-2 border rounded-md"
+              />
+            </div>
+          )}
         </div>
       </div>
 
