@@ -1,8 +1,15 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { getUserByUsername, createUser } from '@/lib/db/models/user'
-import { achievements } from '@/lib/config/achievements'
 import { UserType } from '@/lib/types'
+import { achievements } from '@/lib/config/achievements'
+
+// Lista de usuarios predefinidos para simplificar
+const predefinedUsers = {
+  cosh: { id: 'Cosh', name: 'cosh', logs: [], achievements, oshfitScore: 0 },
+  rosch: { id: 'Rosch', name: 'rosch', logs: [], achievements, oshfitScore: 0 },
+  maquin: { id: 'Maquin', name: 'maquin', logs: [], achievements, oshfitScore: 0 },
+  flosh: { id: 'Flosh', name: 'flosh', logs: [], achievements, oshfitScore: 0 },
+}
 
 const handler = NextAuth({
   providers: [
@@ -15,60 +22,47 @@ const handler = NextAuth({
       async authorize(credentials) {
         if (!credentials?.username) return null
         
-        // Simplificamos drásticamente - cualquier usuario puede iniciar sesión
-        // Este enfoque es solo para hacer que el sistema funcione básicamente
+        // Simplificamos drásticamente: solo verificar si es un usuario predefinido
         const username = credentials.username.toLowerCase()
         
-        // Predefined users
-        const predefinedUsers = ['cosh', 'rosch', 'maquin', 'flosh']
-        const isPredefined = predefinedUsers.includes(username)
-        
-        // Check if user exists
-        let user = await getUserByUsername(username)
-        
-        // Create user if it doesn't exist (for predefined users only)
-        if (!user && isPredefined) {
-          const userId = username.charAt(0).toUpperCase() + username.slice(1) as UserType
-          
-          const newUser = {
-            id: userId,
+        // Si es un usuario predefinido, permitir acceso
+        if (Object.keys(predefinedUsers).includes(username)) {
+          console.log(`Login exitoso para usuario predefinido: ${username}`)
+          return {
+            id: username.charAt(0).toUpperCase() + username.slice(1),
             name: username,
-            logs: [],
-            achievements: achievements,
-            oshfitScore: 0
+            email: `${username}@example.com`
           }
-          
-          await createUser(newUser)
-          user = newUser
         }
         
-        if (!user) return null
-        
-        return {
-          id: user.id,
-          name: user.name,
-          email: `${username}@example.com`
-        }
+        console.log(`Usuario no encontrado: ${username}`)
+        return null
       }
     })
   ],
   pages: {
     signIn: '/login',
+    error: '/login', // Redirigir a login en caso de error
   },
   callbacks: {
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub as string
-      }
-      return session
-    },
     async jwt({ token, user }) {
       if (user) {
         token.sub = user.id
       }
       return token
+    },
+    async session({ session, token }) {
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.sub
+        }
+      }
     }
-  }
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
 })
 
 export { handler as GET, handler as POST } 
