@@ -5,7 +5,18 @@ import { UserProfile } from '@/lib/types'
 export async function getUserById(userId: string): Promise<UserProfile | null> {
   const client = await clientPromise
   const collection = client.db('oshfit').collection('users')
-  return collection.findOne({ id: userId }) as Promise<UserProfile | null>
+  
+  const user = await collection.findOne({ id: userId })
+  
+  if (!user) return null
+  
+  return {
+    id: user.id,
+    name: user.name,
+    logs: user.logs || [],
+    achievements: user.achievements || [],
+    oshfitScore: user.oshfitScore || 0
+  }
 }
 
 export async function updateUser(userId: string, data: Partial<UserProfile>): Promise<void> {

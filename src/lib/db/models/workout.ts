@@ -5,7 +5,18 @@ import { WorkoutLog } from '@/lib/types'
 export async function getWorkoutsByUserId(userId: string): Promise<WorkoutLog[]> {
   const client = await clientPromise
   const collection = client.db('oshfit').collection('workouts')
-  return collection.find({ userId }).sort({ date: -1 }).toArray() as Promise<WorkoutLog[]>
+  
+  // Obtenemos los documentos y los mapeamos al tipo WorkoutLog
+  const documents = await collection.find({ userId }).sort({ date: -1 }).toArray()
+  
+  return documents.map(doc => ({
+    id: doc.id || doc._id.toString(),
+    date: doc.date,
+    type: doc.type,
+    bodyWeight: doc.bodyWeight,
+    exercises: doc.exercises,
+    userId: doc.userId
+  })) as WorkoutLog[]
 }
 
 export async function addWorkout(userId: string, workout: WorkoutLog): Promise<void> {
