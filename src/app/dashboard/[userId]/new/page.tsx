@@ -6,7 +6,6 @@ import { useUser } from '@/lib/contexts/UserContext'
 import { WorkoutType } from '@/lib/types'
 import { exercises } from '@/lib/config/exercises'
 import { WorkoutForm } from '@/components/WorkoutForm'
-import { ExerciseList } from '@/components/ExerciseList'
 
 export default function NewWorkoutPage() {
   const router = useRouter()
