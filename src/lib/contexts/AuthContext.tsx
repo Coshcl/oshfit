@@ -57,3 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export { AuthContext };
+
+export {}
+// Archivo mantenido como módulo vacío
