@@ -1,7 +1,7 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import { UserProfile, UserType, WorkoutLog } from '../types'
+import { createContext, useContext, useState } from 'react'
+import { UserProfile, WorkoutLog } from '../types'
 
 interface UserContextType {
   user: UserProfile | null
