@@ -1,12 +1,16 @@
 'use client'
 
-import { Exercise } from '@/lib/types'
+import { Exercise, WeightUnit } from '@/lib/types'
 
 interface ExerciseInputProps {
   exercise: Exercise
   data: {
     weight: string
-    reps: string
+    weightUnit: WeightUnit
+    sets: string
+    repsPerSet: string
+    barWeight: string
+    includeBarWeight: boolean
     effort: string
     notes: string
     useAlternative: boolean
@@ -46,9 +50,38 @@ export function ExerciseInput({ exercise, data, onChange }: ExerciseInputProps) 
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      {/* Selección de unidad de peso */}
+      <div className="flex items-center mb-3">
+        <span className="text-sm text-gray-600 mr-2">Unidad de peso:</span>
+        <div className="flex rounded-md overflow-hidden border border-gray-300">
+          <button
+            type="button"
+            onClick={() => onChange('weightUnit', 'kg')}
+            className={`px-3 py-1 text-sm ${
+              data.weightUnit === 'kg' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+          >
+            kg
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange('weightUnit', 'lb')}
+            className={`px-3 py-1 text-sm ${
+              data.weightUnit === 'lb' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+          >
+            lb
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 mb-4">
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Peso (kg)</label>
+          <label className="block text-sm text-gray-600 mb-1">Peso</label>
           <input
             type="number"
             step="0.5"
@@ -60,15 +93,53 @@ export function ExerciseInput({ exercise, data, onChange }: ExerciseInputProps) 
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Repeticiones</label>
+          <label className="block text-sm text-gray-600 mb-1">Sets</label>
           <input
             type="number"
-            value={data.reps}
-            onChange={(e) => onChange('reps', e.target.value)}
+            value={data.sets}
+            onChange={(e) => onChange('sets', e.target.value)}
             className="w-full p-2 border rounded-md"
             placeholder="0"
           />
         </div>
+
+        <div>
+          <label className="block text-sm text-gray-600 mb-1">Reps/Set</label>
+          <input
+            type="number"
+            value={data.repsPerSet}
+            onChange={(e) => onChange('repsPerSet', e.target.value)}
+            className="w-full p-2 border rounded-md"
+            placeholder="0"
+          />
+        </div>
+      </div>
+
+      {/* Opción de peso de barra */}
+      <div className="flex items-center mb-4">
+        <input
+          type="checkbox"
+          id={`includeBar-${currentExercise.name}`}
+          checked={data.includeBarWeight}
+          onChange={(e) => onChange('includeBarWeight', e.target.checked)}
+          className="h-4 w-4 mr-2"
+        />
+        <label 
+          htmlFor={`includeBar-${currentExercise.name}`}
+          className="text-sm text-gray-600 mr-2"
+        >
+          Incluir peso de barra:
+        </label>
+        <input
+          type="number"
+          step="0.5"
+          value={data.barWeight}
+          onChange={(e) => onChange('barWeight', e.target.value)}
+          className={`w-20 p-2 border rounded-md ${!data.includeBarWeight ? 'opacity-50' : ''}`}
+          placeholder="0"
+          disabled={!data.includeBarWeight}
+        />
+        <span className="ml-1 text-sm text-gray-500">{data.weightUnit}</span>
       </div>
 
       <div className="mb-4">

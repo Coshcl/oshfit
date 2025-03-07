@@ -2,6 +2,8 @@ export type UserType = 'Rosch' | 'Cosh' | 'Maquin' | 'Flosh' | 'Custom';
 
 export type WorkoutType = 'Push' | 'Pull' | 'Legs';
 
+export type WeightUnit = 'kg' | 'lb';
+
 export interface Exercise {
   name: string;
   emoji: string;
@@ -12,19 +14,29 @@ export interface Exercise {
   muscleGroup: string;
 }
 
+export interface ExerciseData {
+  exerciseName: string;
+  emoji: string;
+  weight: number;
+  weightUnit: WeightUnit;
+  sets: number;
+  repsPerSet: number;
+  barWeight?: number;
+  includeBarWeight?: boolean;
+  perceivedEffort: number;
+  notes?: string;
+}
+
 export interface WorkoutLog {
   id: string;
   date: string;
+  startTime?: string; // ISO string for the start time
+  duration?: number; // in minutes
   type: WorkoutType;
   bodyWeight?: number;
-  exercises: {
-    exerciseName: string;
-    emoji: string;
-    weight: number;
-    reps: number;
-    perceivedEffort: number;
-    notes?: string;
-  }[];
+  bodyWeightUnit?: WeightUnit;
+  exercises: ExerciseData[];
+  notes?: string; // General notes for the entire workout
 }
 
 export interface Achievement {
@@ -34,6 +46,7 @@ export interface Achievement {
   emoji: string;
   unlockedAt?: string;
   isUnlocked: boolean;
+  progressTrackable?: boolean; // Indicates if we can track progress for this achievement
 }
 
 export interface UserProfile {

@@ -108,14 +108,29 @@ export function OshfitScore({ score, logs }: OshfitScoreProps) {
 
 function calculateDailyScore(log: WorkoutLog): number {
   const baseScore = log.exercises.reduce((acc, exercise) => {
-    // Intercambiamos los porcentajes: ahora el peso levantado tiene más importancia (60%)
-    // y el esfuerzo percibido tiene menos (25%)
-    const weightScore = (exercise.weight / 100) * 60 // 60% del peso (antes 25%)
-    const effortScore = (exercise.perceivedEffort / 10) * 25 // 25% del peso (antes 60%)
-    const volumeScore = ((exercise.weight * exercise.reps) / 1000) * 15 // 15% del peso (sin cambios)
-    return acc + weightScore + effortScore + volumeScore
-  }, 0) / log.exercises.length
+    // Calcular peso total (incluyendo barra si corresponde)
+    let totalWeight = exercise.weight;
+    
+    if (exercise.includeBarWeight && exercise.barWeight) {
+      totalWeight += exercise.barWeight;
+    }
+    
+    // Convertir a kg si está en libras
+    if (exercise.weightUnit === 'lb') {
+      totalWeight = totalWeight * 0.45359237;
+    }
+    
+    // Calcular volumen (peso * sets * reps)
+    const volume = totalWeight * (exercise.sets || 1) * (exercise.repsPerSet || 1);
+    
+    // Calcular los componentes del score
+    const weightScore = (totalWeight / 100) * 60; // 60% del peso
+    const effortScore = (exercise.perceivedEffort / 10) * 25; // 25% del esfuerzo
+    const volumeScore = (volume / 1000) * 15; // 15% del volumen
+    
+    return acc + weightScore + effortScore + volumeScore;
+  }, 0) / log.exercises.length;
 
   // Redondear a un decimal
-  return Math.round(baseScore * 10) / 10
+  return Math.round(baseScore * 10) / 10;
 } 
