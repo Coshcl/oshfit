@@ -12,7 +12,7 @@ interface OshfitScoreProps {
 export function OshfitScore({ score, logs }: OshfitScoreProps) {
   const [showInfo, setShowInfo] = useState(false)
 
-  // Preparar datos para el gráfico
+  // Preparar datos para el gráfico 2
   const chartData = logs.map(log => ({
     date: new Date(log.date).toLocaleDateString('es', {
       day: 'numeric',
