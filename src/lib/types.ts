@@ -1,9 +1,13 @@
 export interface Exercise {
   name: string;
   category: string;
+  emoji: string;
   description?: string;
   alternativeExercise?: string;
-  emoji?: string;
+  alternative?: {
+    name: string;
+    emoji: string;
+  };
 }
 
 export interface ExerciseData {
@@ -28,6 +32,8 @@ export interface WorkoutLog {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type WorkoutType = 'strength' | 'cardio' | 'flexibility' | 'other';
 
 export interface Achievement {
   id: string;
@@ -56,4 +62,7 @@ export interface User {
   achievements?: Achievement[];
   createdAt: Date;
   updatedAt: Date;
-} 
+}
+
+// Tipo para IDs de usuario predefinidos
+export type UserType = 'Cosh' | 'Rosch' | 'Maquin' | 'Flosh'; 

@@ -18,7 +18,7 @@ export function AchievementCard({ achievement, onClick }: AchievementCardProps) 
   return (
     <button
       onClick={onClick}
-      className={`relative aspect-square rounded-lg flex items-center justify-center text-2xl overflow-hidden
+      className={`relative aspect-square rounded-lg flex items-center justify-center overflow-hidden
                  ${isUnlocked ? 'bg-blue-100' : 'bg-gray-100'}`}
     >
       {/* Barra de progreso para logros no desbloqueados */}
@@ -32,8 +32,10 @@ export function AchievementCard({ achievement, onClick }: AchievementCardProps) 
         ></div>
       )}
       
-      {/* Emoji del logro */}
-      <span className="relative z-10">{achievement.emoji}</span>
+      {/* Emoji del logro - mejorado el centrado */}
+      <span className="relative z-10 flex items-center justify-center text-2xl w-full h-full">
+        {achievement.emoji}
+      </span>
       
       {/* Indicador de progreso numérico */}
       {!isUnlocked && achievement.currentCount !== undefined && achievement.requiredCount !== undefined && (

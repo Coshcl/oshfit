@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { achievements } from '@/lib/config/achievements'
 import { UserType } from '@/lib/types'
-import clientPromise from '@/lib/db/mongodb'
+import mongodb from '@/lib/db/mongodb'
 
 // Usuarios predefinidos para inicializar la base de datos
 const predefinedUsers = {
@@ -13,8 +13,8 @@ const predefinedUsers = {
 
 export async function GET() {
   try {
-    const client = await clientPromise
-    const collection = client.db('oshfit').collection('users')
+    const { client, db } = await mongodb()
+    const collection = db.collection('users')
     
     // Verificar que la conexión a MongoDB está funcionando
     const pingResult = await client.db("admin").command({ ping: 1 })
